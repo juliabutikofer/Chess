@@ -4,6 +4,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import java.util.ArrayList;
+
 /**
  * Represents a single chess piece
  * <p>
@@ -69,10 +71,43 @@ public class ChessPiece {
      */
     //hardcoded, have to fix
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
-        ChessPiece piece = board.getPiece(myPosition);
-        if (piece.getPieceType() == PieceType.BISHOP) {
-            return List.of(new ChessMove(new ChessPosition(5, 4), new ChessPosition(1, 8), null));
-        }
-        return List.of();
+        return switch (type) {
+            case BISHOP -> getBishopMoves(board, myPosition);
+            case ROOK -> getRookMoves(board, myPosition);
+            case QUEEN -> getQueenMoves(board, myPosition);
+            case KNIGHT -> getKnightMoves(board, myPosition);
+            case KING -> getKingMoves(board, myPosition);
+            case PAWN -> getPawnMoves(board, myPosition);
+        };
+    }
+
+    private Collection<ChessMove> getBishopMoves(ChessBoard board, ChessPosition myPosition) {
+        //bishop
+        return new ArrayList<>();
+    }
+
+    private Collection<ChessMove> getRookMoves(ChessBoard board, ChessPosition myPosition) {
+        //rook
+        return new ArrayList<>();
+    }
+
+    private Collection<ChessMove> getQueenMoves(ChessBoard board, ChessPosition myPosition) {
+        //rook
+        return new ArrayList<>();
+    }
+
+    private Collection<ChessMove> getKnightMoves(ChessBoard board, ChessPosition myPosition) {
+        //knight
+        return new ArrayList<>();
+    }
+
+    private Collection<ChessMove> getKingMoves(ChessBoard board, ChessPosition myPosition) {
+        //king
+        return new ArrayList<>();
+    }
+
+    private Collection<ChessMove> getPawnMoves(ChessBoard board, ChessPosition myPosition) {
+        //pawn
+        return new ArrayList<>();
     }
 }
