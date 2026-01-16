@@ -1,7 +1,6 @@
 package chess;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 
 import java.util.ArrayList;
@@ -83,16 +82,65 @@ public class ChessPiece {
 
     private Collection<ChessMove> getBishopMoves(ChessBoard board, ChessPosition myPosition) {
         //bishop
-        return new ArrayList<>();
+        int startRow = myPosition.getRow();
+        int startCol = myPosition.getColumn();
+
+        Collection<ChessMove> moves = new ArrayList<>();
+
+        int[][] directions = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
+        for (int[] dir: directions) {
+            int row = startRow;
+            int col = startCol;
+            while (true) {
+                row += dir[0];
+                col += dir[1];
+                if (!onBoard(row, col)) break;
+                if (isEmpty(board, row, col)) {
+                    moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
+                }
+                else if (isEnemy(board, row, col)) {
+                    moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
+                    break;
+                }
+                else {
+                    break;
+                }
+            }
+        }
+        return moves;
     }
 
     private Collection<ChessMove> getRookMoves(ChessBoard board, ChessPosition myPosition) {
         //rook
-        return new ArrayList<>();
+        int startRow = myPosition.getRow();
+        int startCol = myPosition.getColumn();
+
+        Collection<ChessMove> moves = new ArrayList<>();
+
+        int[][] directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
+
+        for (int[] dir: directions) {
+            int row = startRow;
+            int col = startCol;
+            while (true) {
+                row += dir[0];
+                col += dir[1];
+                if (!onBoard(row, col)) break;
+                if (isEmpty(board, row, col)) {
+                    moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
+                } else if (isEnemy(board, row, col)) {
+                    moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
+                    break;
+                } else {
+                    break;
+                }
+            }
+        }
+            return moves;
     }
 
     private Collection<ChessMove> getQueenMoves(ChessBoard board, ChessPosition myPosition) {
-        //rook
+        //queen
         return new ArrayList<>();
     }
 
@@ -109,5 +157,26 @@ public class ChessPiece {
     private Collection<ChessMove> getPawnMoves(ChessBoard board, ChessPosition myPosition) {
         //pawn
         return new ArrayList<>();
+    }
+
+
+
+
+
+
+    private boolean isEmpty(ChessBoard board, int row , int col) {
+        return board.getPiece(new ChessPosition(row, col)) == null;
+    }
+
+    private boolean isEnemy(ChessBoard board, int row, int col) {
+        ChessPiece piece = board.getPiece(new ChessPosition(row, col));
+        if (piece == null) {
+            return false;
+        }
+        return piece.getTeamColor() != this.pieceColor;
+    }
+
+    private boolean onBoard(int row, int col) {
+        return row >= 1 && row <= 8 && col >= 1 && col <= 8;
     }
 }

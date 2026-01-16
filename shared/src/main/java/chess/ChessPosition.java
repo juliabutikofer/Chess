@@ -53,3 +53,4 @@ public class ChessPosition {
         return Objects.hash(row, col);
     }
 }
+
