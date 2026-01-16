@@ -141,22 +141,95 @@ public class ChessPiece {
 
     private Collection<ChessMove> getQueenMoves(ChessBoard board, ChessPosition myPosition) {
         //queen
-        return new ArrayList<>();
+        int startRow = myPosition.getRow();
+        int startCol = myPosition.getColumn();
+
+        Collection<ChessMove> moves = new ArrayList<>();
+
+        int[][] directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}, {1, 1}, {-1, 1}, {1, -1}, {-1, -1}};
+
+        for (int[] dir: directions) {
+            int row = startRow;
+            int col = startCol;
+            while (true) {
+                row += dir[0];
+                col += dir[1];
+                if (!onBoard(row, col)) break;
+                if (isEmpty(board, row, col)) {
+                    moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
+                } else if (isEnemy(board, row, col)) {
+                    moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
+                    break;
+                } else {
+                    break;
+                }
+            }
+        }
+        return moves;
     }
 
     private Collection<ChessMove> getKnightMoves(ChessBoard board, ChessPosition myPosition) {
         //knight
-        return new ArrayList<>();
+        int startRow = myPosition.getRow();
+        int startCol = myPosition.getColumn();
+
+        Collection<ChessMove> moves = new ArrayList<>();
+
+        int[][] directions = {{1, 2}, {2, 1}, {2, -1}, {1, -2}, {-1, -2}, {-2, -1}, {-2, 1}, {-1, 2}};
+        for (int[] dir : directions) {
+            int row = startRow;
+            int col = startCol;
+            row += dir[0];
+            col += dir[1];
+            if (!onBoard(row, col)) continue;
+            if (isEmpty(board, row, col)) {
+                moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
+            } else if (isEnemy(board, row, col)) {
+                moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
+            }
+        }
+        return moves;
     }
 
     private Collection<ChessMove> getKingMoves(ChessBoard board, ChessPosition myPosition) {
         //king
-        return new ArrayList<>();
+        int startRow = myPosition.getRow();
+        int startCol = myPosition.getColumn();
+
+        Collection<ChessMove> moves = new ArrayList<>();
+
+        int[][] directions = {{0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}};
+        for (int[] dir : directions) {
+            int row = startRow;
+            int col = startCol;
+            row += dir[0];
+            col += dir[1];
+            if (!onBoard(row, col)) continue;
+            if (isEmpty(board, row, col)) {
+                moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
+            } else if (isEnemy(board, row, col)) {
+                moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
+            }
+        }
+        return moves;
     }
 
     private Collection<ChessMove> getPawnMoves(ChessBoard board, ChessPosition myPosition) {
         //pawn
-        return new ArrayList<>();
+        int startRow = myPosition.getRow();
+        int startCol = myPosition.getColumn();
+
+        Collection<ChessMove> moves = new ArrayList<>();
+
+        int[][] directions = {{0, 1}};
+        for (int[] dir : directions) {
+            int row = startRow;
+            int col = startCol;
+            row += dir[1];
+
+
+            return moves;
+        }
     }
 
 
@@ -177,6 +250,6 @@ public class ChessPiece {
     }
 
     private boolean onBoard(int row, int col) {
-        return row >= 1 && row <= 8 && col >= 1 && col <= 8;
+        return row < 1 || row > 8 || col < 1 || col > 8;
     }
 }
