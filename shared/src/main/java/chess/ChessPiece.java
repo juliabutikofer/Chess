@@ -16,7 +16,7 @@ public class ChessPiece {
     private final ChessGame.TeamColor pieceColor;
     private final PieceType type;
 
-     public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type) {
+    public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type) {
         this.pieceColor = pieceColor;
         this.type = type;
     }
@@ -88,21 +88,21 @@ public class ChessPiece {
         Collection<ChessMove> moves = new ArrayList<>();
 
         int[][] directions = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
-        for (int[] dir: directions) {
+        for (int[] dir : directions) {
             int row = startRow;
             int col = startCol;
             while (true) {
                 row += dir[0];
                 col += dir[1];
-                if (!onBoard(row, col)) break;
-                if (isEmpty(board, row, col)) {
-                    moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
-                }
-                else if (isEnemy(board, row, col)) {
-                    moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
+                if (!onBoard(row, col)) {
                     break;
                 }
-                else {
+                if (isEmpty(board, row, col)) {
+                    moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
+                } else if (isEnemy(board, row, col)) {
+                    moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
+                    break;
+                } else {
                     break;
                 }
             }
@@ -119,13 +119,15 @@ public class ChessPiece {
 
         int[][] directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
 
-        for (int[] dir: directions) {
+        for (int[] dir : directions) {
             int row = startRow;
             int col = startCol;
             while (true) {
                 row += dir[0];
                 col += dir[1];
-                if (!onBoard(row, col)) break;
+                if (!onBoard(row, col)) {
+                    break;
+                }
                 if (isEmpty(board, row, col)) {
                     moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
                 } else if (isEnemy(board, row, col)) {
@@ -136,7 +138,7 @@ public class ChessPiece {
                 }
             }
         }
-            return moves;
+        return moves;
     }
 
     private Collection<ChessMove> getQueenMoves(ChessBoard board, ChessPosition myPosition) {
@@ -148,13 +150,15 @@ public class ChessPiece {
 
         int[][] directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}, {1, 1}, {-1, 1}, {1, -1}, {-1, -1}};
 
-        for (int[] dir: directions) {
+        for (int[] dir : directions) {
             int row = startRow;
             int col = startCol;
             while (true) {
                 row += dir[0];
                 col += dir[1];
-                if (!onBoard(row, col)) break;
+                if (!onBoard(row, col)) {
+                    break;
+                }
                 if (isEmpty(board, row, col)) {
                     moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
                 } else if (isEnemy(board, row, col)) {
@@ -181,7 +185,9 @@ public class ChessPiece {
             int col = startCol;
             row += dir[0];
             col += dir[1];
-            if (!onBoard(row, col)) continue;
+            if (!onBoard(row, col)) {
+                continue;
+            }
             if (isEmpty(board, row, col)) {
                 moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
             } else if (isEnemy(board, row, col)) {
@@ -204,7 +210,9 @@ public class ChessPiece {
             int col = startCol;
             row += dir[0];
             col += dir[1];
-            if (!onBoard(row, col)) continue;
+            if (!onBoard(row, col)) {
+                continue;
+            }
             if (isEmpty(board, row, col)) {
                 moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
             } else if (isEnemy(board, row, col)) {
@@ -274,7 +282,7 @@ public class ChessPiece {
         return moves;
     }
 
-    private boolean isEmpty(ChessBoard board, int row , int col) {
+    private boolean isEmpty(ChessBoard board, int row, int col) {
         return board.getPiece(new ChessPosition(row, col)) == null;
     }
 
