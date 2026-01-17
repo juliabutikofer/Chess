@@ -221,21 +221,58 @@ public class ChessPiece {
 
         Collection<ChessMove> moves = new ArrayList<>();
 
-        int[][] directions = {{0, 1}};
-        for (int[] dir : directions) {
-            int row = startRow;
-            int col = startCol;
-            row += dir[1];
+        int dir;
+        int startRowForTwoSteps;
+        int promotionRow;
 
-
-            return moves;
+        if (getTeamColor() == ChessGame.TeamColor.WHITE) {
+            dir = 1;
+            startRowForTwoSteps = 2;
+            promotionRow = 8;
+        } else {
+            dir = -1;
+            startRowForTwoSteps = 7;
+            promotionRow = 1;
         }
+
+        int oneStep = startRow + dir;
+        if (onBoard(oneStep, startCol) && isEmpty(board, oneStep, startCol)) {
+            if (oneStep == promotionRow) {
+                for (ChessPiece.PieceType promo : new ChessPiece.PieceType[]{
+                        ChessPiece.PieceType.QUEEN,
+                        ChessPiece.PieceType.BISHOP,
+                        ChessPiece.PieceType.KNIGHT,
+                        ChessPiece.PieceType.ROOK}) {
+                    moves.add(new ChessMove(myPosition, new ChessPosition(oneStep, startCol), promo));
+                }
+            } else {
+                moves.add(new ChessMove(myPosition, new ChessPosition(oneStep, startCol), null));
+            }
+
+            int twoStep = startRow + 2 * dir;
+            if (startRow == startRowForTwoSteps && isEmpty(board, twoStep, startCol)) {
+                moves.add(new ChessMove(myPosition, new ChessPosition(twoStep, startCol), null));
+            }
+        }
+
+        int diagRow = startRow + dir;
+        for (int diagCol : new int[]{startCol - 1, startCol + 1}) {
+            if (onBoard(diagRow, diagCol) && isEnemy(board, diagRow, diagCol)) {
+                if (diagRow == promotionRow) {
+                    for (ChessPiece.PieceType promo : new ChessPiece.PieceType[]{
+                            ChessPiece.PieceType.QUEEN,
+                            ChessPiece.PieceType.BISHOP,
+                            ChessPiece.PieceType.KNIGHT,
+                            ChessPiece.PieceType.ROOK}) {
+                        moves.add(new ChessMove(myPosition, new ChessPosition(diagRow, diagCol), promo));
+                    }
+                } else {
+                    moves.add(new ChessMove(myPosition, new ChessPosition(diagRow, diagCol), null));
+                }
+            }
+        }
+        return moves;
     }
-
-
-
-
-
 
     private boolean isEmpty(ChessBoard board, int row , int col) {
         return board.getPiece(new ChessPosition(row, col)) == null;
@@ -250,6 +287,6 @@ public class ChessPiece {
     }
 
     private boolean onBoard(int row, int col) {
-        return row < 1 || row > 8 || col < 1 || col > 8;
+        return row >= 1 && row <= 8 && col >= 1 && col <= 8;
     }
 }
