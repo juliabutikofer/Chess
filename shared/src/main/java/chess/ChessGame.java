@@ -59,35 +59,27 @@ public class ChessGame {
      */
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
         ChessPiece piece = board.getPiece(startPosition);
-        if (piece == null || piece.getTeamColor() != teamTurn) {
-            return new ArrayList<>();
-        }
+        if (piece == null) return new ArrayList<>();
 
         Collection<ChessMove> possibleMoves = new ArrayList<>();
-        Collection<ChessMove> allMoves = piece.pieceMoves(board, startPosition);
-
-        java.util.Iterator<ChessMove> iter = allMoves.iterator();
-        while (iter.hasNext()) {
-            ChessMove move = iter.next();
-
+        for (ChessMove move : piece.pieceMoves(board, startPosition)) {
             ChessBoard copy = new ChessBoard(board);
+            applyMoveToBoard(copy, move, copy.getPiece(move.getStartPosition()));
 
-            ChessPiece movingPiece = copy.getPiece(move.getStartPosition());
-            copy.addPiece(move.getEndPosition(), movingPiece);
-            copy.addPiece(move.getStartPosition(), null);
-
-            if (move.getPromotionPiece() != null) {
-                copy.addPiece(
-                        move.getEndPosition(),
-                        new ChessPiece(piece.getTeamColor(), move.getPromotionPiece())
-                );
-            }
             if (!isInCheck(piece.getTeamColor(), copy)) {
                 possibleMoves.add(move);
             }
         }
-
         return possibleMoves;
+    }
+
+    private void applyMoveToBoard(ChessBoard board, ChessMove move, ChessPiece piece) {
+        board.addPiece(move.getEndPosition(), piece);
+        board.addPiece(move.getStartPosition(), null);
+
+        if (move.getPromotionPiece() != null) {
+            board.addPiece(move.getEndPosition(), new ChessPiece(piece.getTeamColor(), move.getPromotionPiece()));
+        }
     }
 
         /**
@@ -104,21 +96,13 @@ public class ChessGame {
 
         Collection<ChessMove> validMoves = validMoves(move.getStartPosition());
         if (!validMoves.contains(move)) {
-            throw new InvalidMoveException("move not valid");
+            throw new InvalidMoveException("Move not valid");
         }
 
-        board.addPiece(move.getEndPosition(), piece);
-        board.addPiece(move.getStartPosition(), null);
+        applyMoveToBoard(board, move, piece);
 
-        if (move.getPromotionPiece() != null) {
-         ChessPiece promoted = new ChessPiece(teamTurn, move.getPromotionPiece());
-         board.addPiece(move.getEndPosition(), promoted);
-        }
-        if (teamTurn == TeamColor.WHITE) {
-            teamTurn = TeamColor.BLACK;
-        } else {
-            teamTurn = TeamColor.WHITE;
-        }
+        // Switch turn
+        teamTurn = (teamTurn == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
     }
 
     /**
@@ -220,32 +204,14 @@ public class ChessGame {
     }
 
     private Collection<ChessMove> validMovesIndependentOfTurn(ChessPiece piece, ChessPosition pos, TeamColor teamColor) {
-        if (piece == null) return new ArrayList<>();
-
-        Collection<ChessMove> possibleMoves = new ArrayList<>();
-        java.util.Iterator<ChessMove> iter = piece.pieceMoves(board, pos).iterator();
-
-        while (iter.hasNext()) {
-            ChessMove move = iter.next();
-
-            ChessBoard copy = new ChessBoard(board);
-
-            ChessPiece movingPiece = copy.getPiece(move.getStartPosition());
-            copy.addPiece(move.getEndPosition(), movingPiece);
-            copy.addPiece(move.getStartPosition(), null);
-
-            if (move.getPromotionPiece() != null) {
-                copy.addPiece(move.getEndPosition(),
-                        new ChessPiece(teamColor, move.getPromotionPiece()));
-            }
-
-            if (!isInCheck(teamColor, copy)) {
-                possibleMoves.add(move);
-            }
-        }
-
-        return possibleMoves;
+        TeamColor originalTurn = teamTurn;
+        teamTurn = teamColor;
+        Collection<ChessMove> moves = validMoves(pos);
+        teamTurn = originalTurn;
+        return moves;
     }
+
+
 
     /**
      * Sets this game's chessboard with a given board
