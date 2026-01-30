@@ -1,5 +1,6 @@
 package chess;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -15,6 +16,11 @@ public class ChessGame {
     public ChessGame() {
         board = new ChessBoard();
         board.resetBoard();
+        teamTurn = TeamColor.WHITE;
+    }
+
+    public ChessGame(ChessBoard other) {
+        board = new ChessBoard(other);
         teamTurn = TeamColor.WHITE;
 
 
@@ -54,24 +60,39 @@ public class ChessGame {
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
         ChessPiece piece = board.getPiece(startPosition);
         if (piece == null) {
-            return null;
+            return new ArrayList<>();
         }
 
-        if (piece.getTeamColor() != teamTurn) {
-            return null;
+        Collection<ChessMove> possibleMoves = new ArrayList<>();
+
+        for (ChessMove move : piece.pieceMoves(board, startPosition)) {
+            ChessBoard copy = new ChessBoard(board);
+
+            ChessPiece movingPiece = copy.getPiece(move.getStartPosition());
+            copy.addPiece(move.getEndPosition(), movingPiece);
+            copy.addPiece(move.getStartPosition(), null);
+
+            if (move.getPromotionPiece() != null) {
+                copy.addPiece(
+                        move.getEndPosition(),
+                        new ChessPiece(piece.getTeamColor(), move.getPromotionPiece())
+                );
+            }
+
+            if (!isInCheck(piece.getTeamColor(), copy)) {
+                possibleMoves.add(move);
+            }
         }
-
-        Collection<ChessMove> moves = piece.pieceMoves(board, startPosition);
-
-        return moves;
+        return possibleMoves;
     }
 
-    /**
-     * Makes a move in a chess game
-     *
-     * @param move chess move to perform
-     * @throws InvalidMoveException if move is invalid
-     */
+
+        /**
+         * Makes a move in a chess game
+         *
+         * @param move chess move to perform
+         * @throws InvalidMoveException if move is invalid
+         */
     public void makeMove(ChessMove move) throws InvalidMoveException {
         ChessPiece piece = board.getPiece(move.getStartPosition());
         if (piece == null || piece.getTeamColor() != teamTurn) {
