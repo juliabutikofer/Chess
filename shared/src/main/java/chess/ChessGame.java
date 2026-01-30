@@ -59,13 +59,17 @@ public class ChessGame {
      */
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
         ChessPiece piece = board.getPiece(startPosition);
-        if (piece == null) {
+        if (piece == null || piece.getTeamColor() != teamTurn) {
             return new ArrayList<>();
         }
 
         Collection<ChessMove> possibleMoves = new ArrayList<>();
+        Collection<ChessMove> allMoves = piece.pieceMoves(board, startPosition);
 
-        for (ChessMove move : piece.pieceMoves(board, startPosition)) {
+        java.util.Iterator<ChessMove> iter = allMoves.iterator();
+        while (iter.hasNext()) {
+            ChessMove move = iter.next();
+
             ChessBoard copy = new ChessBoard(board);
 
             ChessPiece movingPiece = copy.getPiece(move.getStartPosition());
@@ -78,14 +82,13 @@ public class ChessGame {
                         new ChessPiece(piece.getTeamColor(), move.getPromotionPiece())
                 );
             }
-
             if (!isInCheck(piece.getTeamColor(), copy)) {
                 possibleMoves.add(move);
             }
         }
+
         return possibleMoves;
     }
-
 
         /**
          * Makes a move in a chess game
@@ -216,7 +219,33 @@ public class ChessGame {
         return true;
     }
 
+    private Collection<ChessMove> validMovesIndependentOfTurn(ChessPiece piece, ChessPosition pos, TeamColor teamColor) {
+        if (piece == null) return new ArrayList<>();
 
+        Collection<ChessMove> possibleMoves = new ArrayList<>();
+        java.util.Iterator<ChessMove> iter = piece.pieceMoves(board, pos).iterator();
+
+        while (iter.hasNext()) {
+            ChessMove move = iter.next();
+
+            ChessBoard copy = new ChessBoard(board);
+
+            ChessPiece movingPiece = copy.getPiece(move.getStartPosition());
+            copy.addPiece(move.getEndPosition(), movingPiece);
+            copy.addPiece(move.getStartPosition(), null);
+
+            if (move.getPromotionPiece() != null) {
+                copy.addPiece(move.getEndPosition(),
+                        new ChessPiece(teamColor, move.getPromotionPiece()));
+            }
+
+            if (!isInCheck(teamColor, copy)) {
+                possibleMoves.add(move);
+            }
+        }
+
+        return possibleMoves;
+    }
 
     /**
      * Sets this game's chessboard with a given board
