@@ -2,6 +2,7 @@ package chess;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 
 /**
  * For a class that can manage a chess game, making moves on a board
@@ -22,8 +23,6 @@ public class ChessGame {
     public ChessGame(ChessBoard other) {
         board = new ChessBoard(other);
         teamTurn = TeamColor.WHITE;
-
-
     }
 
     /**
@@ -57,9 +56,12 @@ public class ChessGame {
      * @return Set of valid moves for requested piece, or null if no piece at
      * startPosition
      */
+
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
         ChessPiece piece = board.getPiece(startPosition);
-        if (piece == null) return new ArrayList<>();
+        if (piece == null) {
+            return new ArrayList<>();
+        }
 
         Collection<ChessMove> possibleMoves = new ArrayList<>();
         for (ChessMove move : piece.pieceMoves(board, startPosition)) {
@@ -150,29 +152,32 @@ public class ChessGame {
      * @param teamColor which team to check for checkmate
      * @return True if the specified team is in checkmate
      */
-    public boolean isInCheckmate(TeamColor teamColor) {
-        if (!isInCheck(teamColor)) {
-            return false;
-        }
 
-        for (int row = 1; row <= 8; row++) {
-            for (int col = 1; col <= 8; col++) {
-                ChessPosition pos = new ChessPosition(row, col);
-                ChessPiece piece = board.getPiece(pos);
-                if (piece != null && piece.getTeamColor() == teamColor) {
-                    TeamColor possibleMove = teamTurn;
-                    teamTurn = teamColor;
+    private boolean hasAnyValidMove(TeamColor teamColor) {
+        TeamColor originalTurn = teamTurn;
+        teamTurn = teamColor;
 
-                    Collection<ChessMove> moves = validMoves(pos);
-                    teamTurn = possibleMove;
+        try {
+            for (int row = 1; row <= 8; row++) {
+                for (int col = 1; col <= 8; col++) {
+                    ChessPosition pos = new ChessPosition(row, col);
+                    ChessPiece piece = board.getPiece(pos);
 
-                    if (moves != null && !moves.isEmpty()) {
-                        return false;
+                    if (piece != null && piece.getTeamColor() == teamColor) {
+                        if (!validMoves(pos).isEmpty()) {
+                            return false;
+                        }
                     }
                 }
             }
+            return true;
+        } finally {
+            teamTurn = originalTurn;
         }
-        return true;
+    }
+
+    public boolean isInCheckmate(TeamColor teamColor) {
+        return isInCheck(teamColor) && hasAnyValidMove(teamColor);
     }
 
     /**
@@ -183,35 +188,8 @@ public class ChessGame {
      * @return True if the specified team is in stalemate, otherwise false
      */
     public boolean isInStalemate(TeamColor teamColor) {
-        if (isInCheck(teamColor)) {
-            return false;
-        }
-        for (int row = 1; row <= 8; row++) {
-            for (int col = 1; col <= 8; col++) {
-                ChessPosition pos = new ChessPosition(row, col);
-                ChessPiece piece = board.getPiece(pos);
-
-                if (piece != null && piece.getTeamColor() == teamColor) {
-                    Collection<ChessMove> moves = validMovesIndependentOfTurn(piece, pos, teamColor);
-
-                    if (moves != null && !moves.isEmpty()) {
-                        return false; // Found a move → not stalemate
-                    }
-                }
-            }
-        }
-        return true;
+        return !isInCheck(teamColor) && hasAnyValidMove(teamColor);
     }
-
-    private Collection<ChessMove> validMovesIndependentOfTurn(ChessPiece piece, ChessPosition pos, TeamColor teamColor) {
-        TeamColor originalTurn = teamTurn;
-        teamTurn = teamColor;
-        Collection<ChessMove> moves = validMoves(pos);
-        teamTurn = originalTurn;
-        return moves;
-    }
-
-
 
     /**
      * Sets this game's chessboard with a given board
@@ -237,7 +215,7 @@ public class ChessGame {
         if (o == null || getClass() != o.getClass()) return false;
         ChessGame chessGame = (ChessGame) o;
         return teamTurn == chessGame.teamTurn &&
-                (board != null ? board.equals(chessGame.board) : chessGame.board == null);
+                (Objects.equals(board, chessGame.board));
     }
 
     @Override
