@@ -1,4 +1,4 @@
-package server;
+package DTO;
 
 public class LogoutRequest {
     private String authToken;
