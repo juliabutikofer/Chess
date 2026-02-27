@@ -1,4 +1,4 @@
-package DTO;
+package dto;
 
 public record CreateGameRequest(String gameName) {}
 

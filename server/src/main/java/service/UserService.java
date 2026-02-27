@@ -3,11 +3,11 @@ package service;
 import dataaccess.*;
 import model.UserData;
 import model.AuthData;
-import DTO.RegisterRequest;
-import DTO.RegisterResult;
-import DTO.LoginRequest;
-import DTO.LoginResult;
-import DTO.LogoutRequest;
+import dto.RegisterRequest;
+import dto.RegisterResult;
+import dto.LoginRequest;
+import dto.LoginResult;
+import dto.LogoutRequest;
 import java.util.UUID;
 
 public class UserService {

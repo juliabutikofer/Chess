@@ -1,6 +1,6 @@
 package server;
 
-import DTO.*;
+import dto.*;
 import dataaccess.*;
 import io.javalin.Javalin;
 import io.javalin.http.Context;

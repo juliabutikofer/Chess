@@ -1,7 +1,7 @@
 package service;
 import dataaccess.*;
 import model.*;
-import DTO.*;
+import dto.*;
 
 import org.junit.jupiter.api.Test;
 

@@ -1,4 +1,4 @@
-package DTO;
+package dto;
 
 import model.GameData;
 import java.util.Collection;

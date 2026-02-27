@@ -1,6 +1,6 @@
 package service;
 
-import DTO.*;
+import dto.*;
 import dataaccess.*;
 import model.AuthData;
 import model.GameData;
