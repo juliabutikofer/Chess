@@ -8,7 +8,6 @@ import DTO.RegisterResult;
 import DTO.LoginRequest;
 import DTO.LoginResult;
 import DTO.LogoutRequest;
-
 import java.util.UUID;
 
 public class UserService {

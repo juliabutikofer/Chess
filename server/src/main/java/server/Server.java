@@ -9,7 +9,6 @@ import service.GameService;
 import service.UserService;
 import service.ClearService;
 import com.google.gson.Gson;
-
 import java.lang.reflect.Type;
 import java.util.Map;
 
@@ -56,14 +55,18 @@ public class Server {
         javalin.stop();
     }
 
+    private String requireAuthToken(Context ctx) throws DataAccessException {
+        String token = ctx.header("authorization");
+        if (token == null) {
+            throw new DataAccessException("unauthorized");
+        }
+        return token;
+    }
+
     // handlers
     private void listGames(Context ctx) {
         try {
-            String token = ctx.header("authorization");
-            if (token == null) {
-                ctx.status(401).json(Map.of("message", "Error: unauthorized"));
-                return;
-            }
+            String token = requireAuthToken(ctx);
 
             ListGamesResult result = gameService.listGames(token);
             ctx.status(200).json(result);
@@ -77,18 +80,15 @@ public class Server {
 
     private void createGame(Context ctx) {
         try {
-            String token = ctx.header("authorization");
-            if (token == null) {
-                ctx.status(401).json(Map.of("message", "Error: unauthorized"));
-                return;
-            }
+            String token = requireAuthToken(ctx);
 
             CreateGameRequest req = ctx.bodyAsClass(CreateGameRequest.class);
+
             CreateGameResult result = gameService.createGame(req, token);
             ctx.status(200).json(result);
 
         } catch (DataAccessException e) {
-            if (e.getMessage().contains("bad request")) {
+            if (e.getMessage().toLowerCase().contains("bad request")) {
                 ctx.status(400).json(Map.of("message", "Error: bad request"));
             } else {
                 ctx.status(401).json(Map.of("message", "Error: unauthorized"));
@@ -100,13 +100,10 @@ public class Server {
 
     private void joinGame(Context ctx) {
         try {
-            String token = ctx.header("authorization");
-            if (token == null) {
-                ctx.status(401).json(Map.of("message", "Error: unauthorized"));
-                return;
-            }
+            String token = requireAuthToken(ctx);
 
             JoinGameRequest req = ctx.bodyAsClass(JoinGameRequest.class);
+
             gameService.joinGame(req, token);
             ctx.status(200).json(Map.of());
 
@@ -164,16 +161,14 @@ public class Server {
 
     private void logout(Context ctx) {
         try {
-            String token = ctx.header("authorization");
-            if (token == null) {
-                ctx.status(401).json(Map.of("message", "Error: unauthorized"));
-                return;
-            }
+            String token = requireAuthToken(ctx);
             LogoutRequest req = new LogoutRequest(token);
             userService.logout(req);
             ctx.status(200).json(Map.of());
         } catch (DataAccessException e) {
             ctx.status(401).json(Map.of("message", "Error: unauthorized"));
+        } catch (Exception e) {
+            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
         }
     }
 
@@ -186,7 +181,6 @@ public class Server {
         }
     }
 
-    // --- JSON Mapper ---
     public static class GsonMapper implements JsonMapper {
 
         private final Gson gson;
