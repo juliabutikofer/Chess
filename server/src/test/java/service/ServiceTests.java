@@ -222,4 +222,24 @@ public class ServiceTests {
                 () -> gameService.joinGame(
                         new JoinGameRequest("WHITE", game.gameID()), reg2.getAuthToken()));
     }
+
+    //CLEAR
+
+    //positive test
+    @Test
+    public void clearPositive() throws Exception {
+        UserDAO userDAO = new MemoryUserDAO();
+        AuthDAO authDAO = new MemoryAuthDAO();
+        GameDAO gameDAO = new MemoryGameDAO();
+
+        ClearService clearService =
+                new ClearService(userDAO, authDAO, gameDAO);
+
+        userDAO.insertUser(new UserData("bob", "pass", "email"));
+
+        clearService.clear();
+
+        assertNull(userDAO.getUser("bob"));
+    }
 }
+
