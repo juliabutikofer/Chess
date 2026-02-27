@@ -63,14 +63,9 @@ public class Server {
         return token;
     }
 
-    // handlers
-    private void listGames(Context ctx) {
+    private void handleRequest(RunnableWithException action, Context ctx) {
         try {
-            String token = requireAuthToken(ctx);
-
-            ListGamesResult result = gameService.listGames(token);
-            ctx.status(200).json(result);
-
+            action.run();
         } catch (DataAccessException e) {
             ctx.status(401).json(Map.of("message", "Error: unauthorized"));
         } catch (Exception e) {
@@ -78,30 +73,38 @@ public class Server {
         }
     }
 
-    private void createGame(Context ctx) {
-        try {
-            String token = requireAuthToken(ctx);
+    @FunctionalInterface
+    private interface RunnableWithException {
+        void run() throws Exception;
+    }
 
+    // handlers
+    private void listGames(Context ctx) {
+        handleRequest(() -> {
+            String token = requireAuthToken(ctx);
+            ListGamesResult result = gameService.listGames(token);
+            ctx.status(200).json(result);
+        }, ctx);
+    }
+
+    private void createGame(Context ctx) {
+        handleRequest(() -> {
+            String token = requireAuthToken(ctx);
             CreateGameRequest req = ctx.bodyAsClass(CreateGameRequest.class);
+
+            if (req == null || req.gameName() == null || req.gameName().isBlank()) {
+                ctx.status(400).json(Map.of("message", "Error: bad request"));
+                return;
+            }
 
             CreateGameResult result = gameService.createGame(req, token);
             ctx.status(200).json(result);
-
-        } catch (DataAccessException e) {
-            if (e.getMessage().toLowerCase().contains("bad request")) {
-                ctx.status(400).json(Map.of("message", "Error: bad request"));
-            } else {
-                ctx.status(401).json(Map.of("message", "Error: unauthorized"));
-            }
-        } catch (Exception e) {
-            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
-        }
+        }, ctx);
     }
 
     private void joinGame(Context ctx) {
         try {
             String token = requireAuthToken(ctx);
-
             JoinGameRequest req = ctx.bodyAsClass(JoinGameRequest.class);
 
             gameService.joinGame(req, token);
@@ -134,14 +137,18 @@ public class Server {
             ctx.status(200).json(result);
 
         } catch (DataAccessException e) {
-            ctx.status(403).json(Map.of("message", "Error: already taken"));
+            if (e.getMessage().toLowerCase().contains("already taken")) {
+                ctx.status(403).json(Map.of("message", "Error: already taken"));
+            } else {
+                ctx.status(401).json(Map.of("message", "Error: unauthorized"));
+            }
         } catch (Exception e) {
             ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
         }
     }
 
     private void login(Context ctx) {
-        try {
+        handleRequest(() -> {
             LoginRequest req = ctx.bodyAsClass(LoginRequest.class);
 
             if (req.username() == null || req.password() == null) {
@@ -151,36 +158,23 @@ public class Server {
 
             LoginResult result = userService.login(req);
             ctx.status(200).json(result);
-
-        } catch (DataAccessException e) {
-            ctx.status(401).json(Map.of("message", "Error: unauthorized"));
-        } catch (Exception e) {
-            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
-        }
+        }, ctx);
     }
 
     private void logout(Context ctx) {
-        try {
+        handleRequest(() -> {
             String token = requireAuthToken(ctx);
-
             LogoutRequest req = new LogoutRequest(token);
             userService.logout(req);
             ctx.status(200).json(Map.of());
-
-        } catch (DataAccessException e) {
-            ctx.status(401).json(Map.of("message", "Error: unauthorized"));
-        } catch (Exception e) {
-            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
-        }
+        }, ctx);
     }
 
     private void clear(Context ctx) {
-        try {
+        handleRequest(() -> {
             clearService.clear();
             ctx.status(200).json(Map.of());
-        } catch (DataAccessException e) {
-            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
-        }
+        }, ctx);
     }
 
     public static class GsonMapper implements JsonMapper {
