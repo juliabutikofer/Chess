@@ -22,16 +22,16 @@ public class UserService {
     }
 
     public RegisterResult register(RegisterRequest req) throws DataAccessException {
-        if (req == null || req.getUsername() == null || req.getPassword() == null) {
+        if (req == null || req.username() == null || req.password() == null) {
             throw new DataAccessException("bad request");
         }
 
-        UserData existing = users.getUser(req.getUsername());
+        UserData existing = users.getUser(req.username());
         if (existing != null) {
             throw new DataAccessException("already taken");
         }
 
-        UserData user = new UserData(req.getUsername(), req.getPassword(), req.getEmail());
+        UserData user = new UserData(req.username(), req.password(), req.email());
         users.insertUser(user);
 
         String token = UUID.randomUUID().toString();
@@ -41,8 +41,8 @@ public class UserService {
     }
 
     public LoginResult login(LoginRequest req) throws DataAccessException {
-        UserData user = users.getUser(req.getUsername());
-        if (user == null || !user.password().equals(req.getPassword())) {
+        UserData user = users.getUser(req.username());
+        if (user == null || !user.password().equals(req.password())) {
             throw new DataAccessException("unauthorized");
         }
 
@@ -54,16 +54,16 @@ public class UserService {
 
     public void logout(LogoutRequest req) throws DataAccessException {
 
-        if (req == null || req.getAuthToken() == null) {
+        if (req == null || req.authToken() == null) {
             throw new DataAccessException("unauthorized");
         }
 
-        AuthData auth = auths.getAuth(req.getAuthToken());
+        AuthData auth = auths.getAuth(req.authToken());
 
         if (auth == null) {
             throw new DataAccessException("unauthorized");
         }
 
-        auths.deleteAuth(req.getAuthToken());
+        auths.deleteAuth(req.authToken());
     }
 }

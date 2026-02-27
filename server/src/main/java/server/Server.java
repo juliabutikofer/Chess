@@ -128,7 +128,7 @@ public class Server {
         try {
             RegisterRequest req = ctx.bodyAsClass(RegisterRequest.class);
 
-            if (req.getUsername() == null || req.getPassword() == null || req.getEmail() == null) {
+            if (req.username() == null || req.password() == null || req.email() == null) {
                 ctx.status(400).json(Map.of("message", "Error: bad request"));
                 return;
             }
@@ -147,7 +147,7 @@ public class Server {
         try {
             LoginRequest req = ctx.bodyAsClass(LoginRequest.class);
 
-            if (req.getUsername() == null || req.getPassword() == null) {
+            if (req.username() == null || req.password() == null) {
                 ctx.status(400).json(Map.of("message", "Error: bad request"));
                 return;
             }

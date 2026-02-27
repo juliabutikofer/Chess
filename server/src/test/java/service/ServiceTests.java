@@ -22,8 +22,8 @@ public class ServiceTests {
         RegisterResult result = service.register(req);
 
         assertNotNull(result);
-        assertEquals("bob", result.getUsername());
-        assertNotNull(result.getAuthToken());
+        assertEquals("bob", result.username());
+        assertNotNull(result.authToken());
     }
 
     //negative test
@@ -55,8 +55,8 @@ public class ServiceTests {
                 service.login(new LoginRequest("bob", "pass"));
 
         assertNotNull(result);
-        assertEquals("bob", result.getUsername());
-        assertNotNull(result.getAuthToken());
+        assertEquals("bob", result.username());
+        assertNotNull(result.authToken());
     }
 
     //negative test
@@ -84,9 +84,9 @@ public class ServiceTests {
         RegisterResult reg =
                 service.register(new RegisterRequest("bob", "pass", "email"));
 
-        service.logout(new LogoutRequest(reg.getAuthToken()));
+        service.logout(new LogoutRequest(reg.authToken()));
 
-        assertNull(authDAO.getAuth(reg.getAuthToken()));
+        assertNull(authDAO.getAuth(reg.authToken()));
     }
 
     //negative test
@@ -118,7 +118,7 @@ public class ServiceTests {
         CreateGameResult result =
                 gameService.createGame(
                         new CreateGameRequest("TestGame"),
-                        reg.getAuthToken());
+                        reg.authToken());
 
         assertNotNull(result);
         assertTrue(result.gameID() > 0);
@@ -152,10 +152,10 @@ public class ServiceTests {
 
         gameService.createGame(
                 new CreateGameRequest("TestGame"),
-                reg.getAuthToken());
+                reg.authToken());
 
         ListGamesResult result =
-                gameService.listGames(reg.getAuthToken());
+                gameService.listGames(reg.authToken());
 
         assertEquals(1, result.games().size());
     }
@@ -187,9 +187,9 @@ public class ServiceTests {
         CreateGameResult game =
                 gameService.createGame(
                         new CreateGameRequest("TestGame"),
-                        reg.getAuthToken());
+                        reg.authToken());
 
-        gameService.joinGame(new JoinGameRequest("WHITE", game.gameID()), reg.getAuthToken());
+        gameService.joinGame(new JoinGameRequest("WHITE", game.gameID()), reg.authToken());
 
         GameData updated = gameDAO.getGame(game.gameID());
         assertEquals("bob", updated.whiteUsername());
@@ -214,13 +214,13 @@ public class ServiceTests {
         CreateGameResult game =
                 gameService.createGame(
                         new CreateGameRequest("TestGame"),
-                        reg1.getAuthToken());
+                        reg1.authToken());
 
-        gameService.joinGame(new JoinGameRequest("WHITE", game.gameID()), reg1.getAuthToken());
+        gameService.joinGame(new JoinGameRequest("WHITE", game.gameID()), reg1.authToken());
 
         assertThrows(DataAccessException.class,
                 () -> gameService.joinGame(
-                        new JoinGameRequest("WHITE", game.gameID()), reg2.getAuthToken()));
+                        new JoinGameRequest("WHITE", game.gameID()), reg2.authToken()));
     }
 
     //CLEAR
