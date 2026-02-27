@@ -5,7 +5,7 @@ public class RegisterRequest {
     private String password;
     private String email;
 
-    public RegisterRequest() {} // needed for JSON deserialization
+    public RegisterRequest() {}
 
     public RegisterRequest(String username, String password, String email) {
         this.username = username;

@@ -4,7 +4,7 @@ public class RegisterResult {
     private String username;
     private String authToken;
 
-    public RegisterResult() {} // for JSON deserialization
+    public RegisterResult() {}
 
     public RegisterResult(String username, String authToken) {
         this.username = username;

@@ -1,25 +1,50 @@
 package server;
 
-import DTO.RegisterRequest;
-import io.javalin.*;
-import model.AuthData;
-import dataaccess.MemoryDataAccess;
+import DTO.*;
+import dataaccess.*;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
+import io.javalin.json.JsonMapper;
+import service.GameService;
+import service.UserService;
+import service.ClearService;
+import com.google.gson.Gson;
+
+import java.lang.reflect.Type;
+import java.util.Map;
 
 public class Server {
 
     private final Javalin javalin;
-    private final ServerFacade facade;
+    private final UserService userService;
+    private final GameService gameService;
+    private final ClearService clearService;
 
     public Server() {
-        facade = new ServerFacade(new MemoryDataAccess());
-        javalin = Javalin.create(config -> config.staticFiles.add("web"));
 
-        // Register your endpoints and exception handlers here.
-        javalin.post("/register", ctx -> {
-            var req = ctx.bodyAsClass(RegisterRequest.class);
-            AuthData auth = facade.registerUser(req.username(), req.password(), req.email());
-            ctx.json(auth);
+        UserDAO userDAO = new MemoryUserDAO();
+        AuthDAO authDAO = new MemoryAuthDAO();
+        GameDAO gameDAO = new MemoryGameDAO();
+
+        userService = new UserService(userDAO, authDAO);
+        gameService = new GameService(gameDAO, authDAO);
+        clearService = new ClearService(userDAO, authDAO, gameDAO);
+
+        Gson gson = new Gson();
+
+        javalin = Javalin.create(config -> {
+            config.staticFiles.add("web");
+            config.jsonMapper(new GsonMapper(gson));
         });
+
+        // endpoints
+        javalin.post("/user", this::register);
+        javalin.post("/session", this::login);
+        javalin.delete("/session", this::logout);
+        javalin.delete("/db", this::clear);
+        javalin.get("/game", this::listGames);
+        javalin.post("/game", this::createGame);
+        javalin.put("/game", this::joinGame);
     }
 
     public int run(int desiredPort) {
@@ -29,5 +54,155 @@ public class Server {
 
     public void stop() {
         javalin.stop();
+    }
+
+    // handlers
+    private void listGames(Context ctx) {
+        try {
+            String token = ctx.header("authorization");
+            if (token == null) {
+                ctx.status(401).json(Map.of("message", "Error: unauthorized"));
+                return;
+            }
+
+            ListGamesResult result = gameService.listGames(token);
+            ctx.status(200).json(result);
+
+        } catch (DataAccessException e) {
+            ctx.status(401).json(Map.of("message", "Error: unauthorized"));
+        } catch (Exception e) {
+            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
+        }
+    }
+
+    private void createGame(Context ctx) {
+        try {
+            String token = ctx.header("authorization");
+            if (token == null) {
+                ctx.status(401).json(Map.of("message", "Error: unauthorized"));
+                return;
+            }
+
+            CreateGameRequest req = ctx.bodyAsClass(CreateGameRequest.class);
+            CreateGameResult result = gameService.createGame(req, token);
+            ctx.status(200).json(result);
+
+        } catch (DataAccessException e) {
+            if (e.getMessage().contains("bad request")) {
+                ctx.status(400).json(Map.of("message", "Error: bad request"));
+            } else {
+                ctx.status(401).json(Map.of("message", "Error: unauthorized"));
+            }
+        } catch (Exception e) {
+            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
+        }
+    }
+
+    private void joinGame(Context ctx) {
+        try {
+            String token = ctx.header("authorization");
+            if (token == null) {
+                ctx.status(401).json(Map.of("message", "Error: unauthorized"));
+                return;
+            }
+
+            JoinGameRequest req = ctx.bodyAsClass(JoinGameRequest.class);
+            gameService.joinGame(req, token);
+            ctx.status(200).json(Map.of());
+
+        } catch (DataAccessException e) {
+            String msg = e.getMessage().toLowerCase();
+            if (msg.contains("bad request")) {
+                ctx.status(400).json(Map.of("message", "Error: bad request"));
+            } else if (msg.contains("taken")) {
+                ctx.status(403).json(Map.of("message", "Error: already taken"));
+            } else {
+                ctx.status(401).json(Map.of("message", "Error: unauthorized"));
+            }
+        } catch (Exception e) {
+            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
+        }
+    }
+
+    private void register(Context ctx) {
+        try {
+            RegisterRequest req = ctx.bodyAsClass(RegisterRequest.class);
+
+            if (req.getUsername() == null || req.getPassword() == null || req.getEmail() == null) {
+                ctx.status(400).json(Map.of("message", "Error: bad request"));
+                return;
+            }
+
+            RegisterResult result = userService.register(req);
+            ctx.status(200).json(result);
+
+        } catch (DataAccessException e) {
+            ctx.status(403).json(Map.of("message", "Error: already taken"));
+        } catch (Exception e) {
+            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
+        }
+    }
+
+    private void login(Context ctx) {
+        try {
+            LoginRequest req = ctx.bodyAsClass(LoginRequest.class);
+
+            if (req.getUsername() == null || req.getPassword() == null) {
+                ctx.status(400).json(Map.of("message", "Error: bad request"));
+                return;
+            }
+
+            LoginResult result = userService.login(req);
+            ctx.status(200).json(result);
+
+        } catch (DataAccessException e) {
+            ctx.status(401).json(Map.of("message", "Error: unauthorized"));
+        } catch (Exception e) {
+            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
+        }
+    }
+
+    private void logout(Context ctx) {
+        try {
+            String token = ctx.header("authorization");
+            if (token == null) {
+                ctx.status(401).json(Map.of("message", "Error: unauthorized"));
+                return;
+            }
+            LogoutRequest req = new LogoutRequest(token);
+            userService.logout(req);
+            ctx.status(200).json(Map.of());
+        } catch (DataAccessException e) {
+            ctx.status(401).json(Map.of("message", "Error: unauthorized"));
+        }
+    }
+
+    private void clear(Context ctx) {
+        try {
+            clearService.clear();
+            ctx.status(200).json(Map.of());
+        } catch (DataAccessException e) {
+            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
+        }
+    }
+
+    // --- JSON Mapper ---
+    public static class GsonMapper implements JsonMapper {
+
+        private final Gson gson;
+
+        public GsonMapper(Gson gson) {
+            this.gson = gson;
+        }
+
+        @Override
+        public <T> T fromJsonString(String json, Type targetType) {
+            return gson.fromJson(json, targetType);
+        }
+
+        @Override
+        public String toJsonString(Object obj, Type type) {
+            return gson.toJson(obj);
+        }
     }
 }
