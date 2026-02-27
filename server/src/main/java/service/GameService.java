@@ -72,6 +72,7 @@ public class GameService {
                 if (game.whiteUsername() != null) {
                     throw new DataAccessException("already taken");
                 }
+
                 game = new GameData(
                         game.gameID(),
                         username,
@@ -84,6 +85,7 @@ public class GameService {
                 if (game.blackUsername() != null) {
                     throw new DataAccessException("already taken");
                 }
+
                 game = new GameData(
                         game.gameID(),
                         game.whiteUsername(),

@@ -52,13 +52,11 @@ public class UserService {
     }
 
     public void logout(LogoutRequest req) throws DataAccessException {
-
         if (req == null || req.authToken() == null) {
             throw new DataAccessException("unauthorized");
         }
 
         AuthData auth = auths.getAuth(req.authToken());
-
         if (auth == null) {
             throw new DataAccessException("unauthorized");
         }
