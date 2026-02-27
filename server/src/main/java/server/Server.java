@@ -162,9 +162,11 @@ public class Server {
     private void logout(Context ctx) {
         try {
             String token = requireAuthToken(ctx);
+
             LogoutRequest req = new LogoutRequest(token);
             userService.logout(req);
             ctx.status(200).json(Map.of());
+
         } catch (DataAccessException e) {
             ctx.status(401).json(Map.of("message", "Error: unauthorized"));
         } catch (Exception e) {
