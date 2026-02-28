@@ -68,7 +68,6 @@ public class ChessPiece {
      *
      * @return Collection of valid moves
      */
-    //hardcoded, have to fix
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
         return switch (type) {
             case BISHOP -> getBishopMoves(board, myPosition);
@@ -80,146 +79,97 @@ public class ChessPiece {
         };
     }
 
-    private Collection<ChessMove> getBishopMoves(ChessBoard board, ChessPosition myPosition) {
-        //bishop
-        int startRow = myPosition.getRow();
-        int startCol = myPosition.getColumn();
+    private Collection<ChessMove> getSlidingMoves(
+            ChessBoard board,
+            ChessPosition start,
+            int[][] directions) {
 
         Collection<ChessMove> moves = new ArrayList<>();
 
-        int[][] directions = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
+        int startRow = start.getRow();
+        int startCol = start.getColumn();
+
         for (int[] dir : directions) {
             int row = startRow;
             int col = startCol;
+
             while (true) {
                 row += dir[0];
                 col += dir[1];
-                if (!onBoard(row, col)) {
-                    break;
-                }
+
+                if (!onBoard(row, col)) break;
+
                 if (isEmpty(board, row, col)) {
-                    moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
-                } else if (isEnemy(board, row, col)) {
-                    moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
-                    break;
+                    moves.add(new ChessMove(start, new ChessPosition(row, col), null));
                 } else {
+                    if (isEnemy(board, row, col)) {
+                        moves.add(new ChessMove(start, new ChessPosition(row, col), null));
+                    }
                     break;
                 }
             }
         }
+
         return moves;
     }
 
-    private Collection<ChessMove> getRookMoves(ChessBoard board, ChessPosition myPosition) {
-        //rook
-        int startRow = myPosition.getRow();
-        int startCol = myPosition.getColumn();
+    private Collection<ChessMove> getStepMoves(
+            ChessBoard board,
+            ChessPosition start,
+            int[][] directions) {
 
         Collection<ChessMove> moves = new ArrayList<>();
 
-        int[][] directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
+        int startRow = start.getRow();
+        int startCol = start.getColumn();
 
         for (int[] dir : directions) {
-            int row = startRow;
-            int col = startCol;
-            while (true) {
-                row += dir[0];
-                col += dir[1];
-                if (!onBoard(row, col)) {
-                    break;
-                }
-                if (isEmpty(board, row, col)) {
-                    moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
-                } else if (isEnemy(board, row, col)) {
-                    moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
-                    break;
-                } else {
-                    break;
-                }
+            int row = startRow + dir[0];
+            int col = startCol + dir[1];
+
+            if (!onBoard(row, col)) continue;
+
+            if (isEmpty(board, row, col) || isEnemy(board, row, col)) {
+                moves.add(new ChessMove(start, new ChessPosition(row, col), null));
             }
         }
+
         return moves;
     }
 
-    private Collection<ChessMove> getQueenMoves(ChessBoard board, ChessPosition myPosition) {
-        //queen
-        int startRow = myPosition.getRow();
-        int startCol = myPosition.getColumn();
-
-        Collection<ChessMove> moves = new ArrayList<>();
-
-        int[][] directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}, {1, 1}, {-1, 1}, {1, -1}, {-1, -1}};
-
-        for (int[] dir : directions) {
-            int row = startRow;
-            int col = startCol;
-            while (true) {
-                row += dir[0];
-                col += dir[1];
-                if (!onBoard(row, col)) {
-                    break;
-                }
-                if (isEmpty(board, row, col)) {
-                    moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
-                } else if (isEnemy(board, row, col)) {
-                    moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
-                    break;
-                } else {
-                    break;
-                }
-            }
-        }
-        return moves;
+    private Collection<ChessMove> getBishopMoves(ChessBoard board, ChessPosition pos) {
+        return getSlidingMoves(board, pos,
+                new int[][]{{1,1},{1,-1},{-1,1},{-1,-1}});
     }
 
-    private Collection<ChessMove> getKnightMoves(ChessBoard board, ChessPosition myPosition) {
-        //knight
-        int startRow = myPosition.getRow();
-        int startCol = myPosition.getColumn();
-
-        Collection<ChessMove> moves = new ArrayList<>();
-
-        int[][] directions = {{1, 2}, {2, 1}, {2, -1}, {1, -2}, {-1, -2}, {-2, -1}, {-2, 1}, {-1, 2}};
-        for (int[] dir : directions) {
-            int row = startRow;
-            int col = startCol;
-            row += dir[0];
-            col += dir[1];
-            if (!onBoard(row, col)) {
-                continue;
-            }
-            if (isEmpty(board, row, col)) {
-                moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
-            } else if (isEnemy(board, row, col)) {
-                moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
-            }
-        }
-        return moves;
+    private Collection<ChessMove> getRookMoves(ChessBoard board, ChessPosition pos) {
+        return getSlidingMoves(board, pos,
+                new int[][]{{0,1},{1,0},{0,-1},{-1,0}});
     }
 
-    private Collection<ChessMove> getKingMoves(ChessBoard board, ChessPosition myPosition) {
-        //king
-        int startRow = myPosition.getRow();
-        int startCol = myPosition.getColumn();
 
-        Collection<ChessMove> moves = new ArrayList<>();
+    private Collection<ChessMove> getQueenMoves(ChessBoard board, ChessPosition pos) {
+        return getSlidingMoves(board, pos,
+                new int[][]{
+                        {0,1},{1,0},{0,-1},{-1,0},
+                        {1,1},{1,-1},{-1,1},{-1,-1}
+                });
+    }
 
-        int[][] directions = {{0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}};
-        for (int[] dir : directions) {
-            int row = startRow;
-            int col = startCol;
-            row += dir[0];
-            col += dir[1];
-            if (!onBoard(row, col)) {
-                continue;
-            }
-            if (isEmpty(board, row, col)) {
-                moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
-            } else if (isEnemy(board, row, col)) {
-                moves.add(new ChessMove(myPosition, new ChessPosition(row, col), null));
-            }
-        }
-        return moves;
+    private Collection<ChessMove> getKnightMoves(ChessBoard board, ChessPosition pos) {
+        return getStepMoves(board, pos,
+                new int[][]{
+                        {1,2},{2,1},{2,-1},{1,-2},
+                        {-1,-2},{-2,-1},{-2,1},{-1,2}
+                });
+    }
+
+    private Collection<ChessMove> getKingMoves(ChessBoard board, ChessPosition pos) {
+        return getStepMoves(board, pos,
+                new int[][]{
+                        {0,1},{1,1},{1,0},{1,-1},
+                        {0,-1},{-1,-1},{-1,0},{-1,1}
+                });
     }
 
     private Collection<ChessMove> getPawnMoves(ChessBoard board, ChessPosition myPosition) {
