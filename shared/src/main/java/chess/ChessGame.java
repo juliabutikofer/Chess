@@ -84,6 +84,48 @@ public class ChessGame {
         }
     }
 
+    private ChessPosition findKing(TeamColor teamColor, ChessBoard board) {
+        for (int row = 1; row <= 8; row++) {
+            for (int col = 1; col <= 8; col++) {
+                ChessPosition pos = new ChessPosition(row, col);
+                ChessPiece piece = board.getPiece(pos);
+
+                if (piece != null &&
+                        piece.getTeamColor() == teamColor &&
+                        piece.getPieceType() == ChessPiece.PieceType.KING) {
+
+                    return pos;
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean isSquareUnderAttack(
+            ChessPosition target,
+            TeamColor defendingTeam,
+            ChessBoard board) {
+
+        for (int row = 1; row <= 8; row++) {
+            for (int col = 1; col <= 8; col++) {
+
+                ChessPosition pos = new ChessPosition(row, col);
+                ChessPiece piece = board.getPiece(pos);
+
+                if (piece == null || piece.getTeamColor() == defendingTeam) {
+                    continue;
+                }
+
+                for (ChessMove move : piece.pieceMoves(board, pos)) {
+                    if (move.getEndPosition().equals(target)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
         /**
          * Makes a move in a chess game
          *
@@ -118,32 +160,8 @@ public class ChessGame {
     }
 
     private boolean isInCheck(TeamColor teamColor, ChessBoard board) {
-        ChessPosition kingPosition = null;
-        //find the king
-        for (int row = 1;row <=8; row++) {
-            for (int col = 1; col <= 8; col++) {
-                ChessPosition pos = new ChessPosition(row, col);
-                ChessPiece piece = board.getPiece(pos);
-                if (piece != null && piece.getTeamColor() == teamColor && piece.getPieceType() == ChessPiece.PieceType.KING) {
-                    kingPosition = pos;
-                }
-            }
-        }
-        //find out if enemy can attack
-        for (int row = 1; row <= 8; row++) {
-            for (int col = 1; col <= 8; col++) {
-                ChessPosition pos = new ChessPosition(row, col);
-                ChessPiece piece = board.getPiece(pos);
-                if (piece != null && piece.getTeamColor() != teamColor) {
-                    for (ChessMove move : piece.pieceMoves(board, pos)) {
-                        if (move.getEndPosition().equals(kingPosition)) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
+        ChessPosition kingPosition = findKing(teamColor, board);
+        return isSquareUnderAttack(kingPosition, teamColor, board);
     }
 
     /**
@@ -160,13 +178,15 @@ public class ChessGame {
         try {
             for (int row = 1; row <= 8; row++) {
                 for (int col = 1; col <= 8; col++) {
+
                     ChessPosition pos = new ChessPosition(row, col);
                     ChessPiece piece = board.getPiece(pos);
 
-                    if (piece != null && piece.getTeamColor() == teamColor) {
-                        if (!validMoves(pos).isEmpty()) {
-                            return false;
-                        }
+                    if (piece == null) continue;
+                    if (piece.getTeamColor() != teamColor) continue;
+
+                    if (!validMoves(pos).isEmpty()) {
+                        return false;
                     }
                 }
             }
