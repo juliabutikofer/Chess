@@ -97,7 +97,9 @@ public class ChessPiece {
                 row += dir[0];
                 col += dir[1];
 
-                if (!onBoard(row, col)) break;
+                if (!onBoard(row, col)) {
+                    break;
+                }
 
                 if (isEmpty(board, row, col)) {
                     moves.add(new ChessMove(start, new ChessPosition(row, col), null));
@@ -127,7 +129,9 @@ public class ChessPiece {
             int row = startRow + dir[0];
             int col = startCol + dir[1];
 
-            if (!onBoard(row, col)) continue;
+            if (!onBoard(row, col)) {
+                continue;
+            }
 
             if (isEmpty(board, row, col) || isEnemy(board, row, col)) {
                 moves.add(new ChessMove(start, new ChessPosition(row, col), null));
