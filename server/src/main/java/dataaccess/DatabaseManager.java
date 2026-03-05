@@ -16,6 +16,37 @@ public class DatabaseManager {
         loadPropertiesFromResources();
     }
 
+    public static void initializeTables() throws DataAccessException {
+        String createUsersTable = """
+        CREATE TABLE IF NOT EXISTS Users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(50) NOT NULL UNIQUE,
+            passwordHash VARCHAR(255) NOT NULL,
+            email VARCHAR(100)
+        )
+    """;
+
+        String createGamesTable = """
+        CREATE TABLE IF NOT EXISTS Games (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            whitePlayer VARCHAR(50),
+            blackPlayer VARCHAR(50),
+            gameState TEXT,
+            status VARCHAR(20),
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """;
+
+        try (Connection conn = DatabaseManager.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(createUsersTable);
+            stmt.executeUpdate(createGamesTable);
+        } catch (SQLException e) {
+            throw new DataAccessException("Failed to initialize tables", e);
+        }
+    }
+
+
     /**
      * Creates the database if it does not already exist.
      */
