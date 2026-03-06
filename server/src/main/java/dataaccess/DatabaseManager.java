@@ -23,7 +23,7 @@ public class DatabaseManager {
             username VARCHAR(50) NOT NULL UNIQUE,
             passwordHash VARCHAR(255) NOT NULL,
             email VARCHAR(100)
-        )
+        );
     """;
 
         String createGamesTable = """
@@ -34,13 +34,14 @@ public class DatabaseManager {
             gameState TEXT,
             status VARCHAR(20),
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
+        );
     """;
 
-        try (Connection conn = DatabaseManager.getConnection();
+        try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
             stmt.executeUpdate(createUsersTable);
             stmt.executeUpdate(createGamesTable);
+            System.out.println("Tables initialized successfully!");
         } catch (SQLException e) {
             throw new DataAccessException("Failed to initialize tables", e);
         }

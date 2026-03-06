@@ -11,6 +11,8 @@ import service.ClearService;
 import com.google.gson.Gson;
 import java.lang.reflect.Type;
 import java.util.Map;
+import java.sql.*;
+import dto.RegisterRequest;
 
 public class Server {
 
@@ -24,6 +26,10 @@ public class Server {
         UserDAO userDAO = new MemoryUserDAO();
         AuthDAO authDAO = new MemoryAuthDAO();
         GameDAO gameDAO = new MemoryGameDAO();
+
+        //UserDAO userDAO = new SQLUserDAO();
+        //AuthDAO authDAO = new SQLAuthDAO();
+        //GameDAO gameDAO = new SQLGameDAO();
 
         userService = new UserService(userDAO, authDAO);
         gameService = new GameService(gameDAO, authDAO);
