@@ -8,6 +8,8 @@ import dto.RegisterResult;
 import dto.LoginRequest;
 import dto.LoginResult;
 import dto.LogoutRequest;
+import org.mindrot.jbcrypt.BCrypt;
+
 import java.util.UUID;
 
 public class UserService {
@@ -41,7 +43,7 @@ public class UserService {
 
     public LoginResult login(LoginRequest req) throws DataAccessException {
         UserData user = users.getUser(req.username());
-        if (user == null || !user.password().equals(req.password())) {
+        if (user == null || !BCrypt.checkpw(req.password(), user.password())) {
             throw new DataAccessException("unauthorized");
         }
 

@@ -2,6 +2,7 @@ package dataaccess;
 
 import model.UserData;
 import java.sql.*;
+import org.mindrot.jbcrypt.BCrypt;
 
 public class SQLUserDAO implements UserDAO {
 
@@ -22,8 +23,12 @@ public class SQLUserDAO implements UserDAO {
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            stmt.setString(1, user.username());       // record accessor
-            stmt.setString(2, user.password());
+            stmt.setString(1, user.username());
+
+            // ✅ Hash the password using BCrypt before storing
+            String hashedPassword = BCrypt.hashpw(user.password(), BCrypt.gensalt());
+            stmt.setString(2, hashedPassword);
+
             stmt.setString(3, user.email());
 
             int affected = stmt.executeUpdate();
@@ -34,7 +39,7 @@ public class SQLUserDAO implements UserDAO {
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     int id = generatedKeys.getInt(1);
-                    // optional: return or store the generated id somewhere
+                    // Optional: store or use the generated ID
                 } else {
                     throw new DataAccessException("Inserting user failed, no ID obtained.");
                 }
@@ -57,11 +62,11 @@ public class SQLUserDAO implements UserDAO {
                 if (rs.next()) {
                     return new UserData(
                             rs.getString("username"),
-                            rs.getString("passwordHash"),
+                            rs.getString("passwordHash"), // hashed password
                             rs.getString("email")
                     );
                 } else {
-                    return null; // user not found
+                    return null;
                 }
             }
 
