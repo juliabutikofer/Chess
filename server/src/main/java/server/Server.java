@@ -23,13 +23,13 @@ public class Server {
 
     public Server() {
 
-        UserDAO userDAO = new MemoryUserDAO();
-        AuthDAO authDAO = new MemoryAuthDAO();
-        GameDAO gameDAO = new MemoryGameDAO();
+        //UserDAO userDAO = new MemoryUserDAO();
+        //AuthDAO authDAO = new MemoryAuthDAO();
+        //GameDAO gameDAO = new MemoryGameDAO();
 
-        //UserDAO userDAO = new SQLUserDAO();
-        //AuthDAO authDAO = new SQLAuthDAO();
-        //GameDAO gameDAO = new SQLGameDAO();
+        UserDAO userDAO = new SQLUserDAO();
+        AuthDAO authDAO = new SQLAuthDAO();
+        GameDAO gameDAO = new SQLGameDAO();
 
         userService = new UserService(userDAO, authDAO);
         gameService = new GameService(gameDAO, authDAO);

@@ -32,37 +32,37 @@ public class DatabaseManager {
         try (Connection conn = DriverManager.getConnection(connectionUrl + "/" + databaseName, dbUsername, dbPassword);
              Statement stmt = conn.createStatement()) {
 
-            // Create Users table if it doesn't exist
+            // Users table
             stmt.executeUpdate("""
-            CREATE TABLE IF NOT EXISTS Users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(50) NOT NULL UNIQUE,
-                passwordHash VARCHAR(255) NOT NULL,
-                email VARCHAR(100)
-            );
-        """);
+                CREATE TABLE IF NOT EXISTS Users (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(50) NOT NULL UNIQUE,
+                    passwordHash VARCHAR(255) NOT NULL,
+                    email VARCHAR(100)
+                );
+            """);
 
-            // Create Games table if it doesn't exist
+            // Games table
             stmt.executeUpdate("""
-            CREATE TABLE IF NOT EXISTS Games (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                whitePlayer VARCHAR(50),
-                blackPlayer VARCHAR(50),
-                gameName VARCHAR(100),
-                gameState TEXT,
-                status VARCHAR(20),
-                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """);
+                CREATE TABLE IF NOT EXISTS Games (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    whitePlayer VARCHAR(50),
+                    blackPlayer VARCHAR(50),
+                    gameName VARCHAR(100),
+                    gameState TEXT,
+                    status VARCHAR(20),
+                    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """);
 
-            // Create AuthTokens table if it doesn't exist
+            // AuthTokens table
             stmt.executeUpdate("""
-            CREATE TABLE IF NOT EXISTS AuthTokens (
-                token VARCHAR(255) PRIMARY KEY,
-                username VARCHAR(50) NOT NULL,
-                FOREIGN KEY (username) REFERENCES Users(username) ON DELETE CASCADE
-            );
-        """);
+                CREATE TABLE IF NOT EXISTS AuthTokens (
+                    token VARCHAR(255) PRIMARY KEY,
+                    username VARCHAR(50) NOT NULL,
+                    FOREIGN KEY (username) REFERENCES Users(username) ON DELETE CASCADE
+                );
+            """);
 
             System.out.println("Tables initialized successfully!");
 
@@ -73,8 +73,7 @@ public class DatabaseManager {
 
     static Connection getConnection() throws DataAccessException {
         try {
-            Connection conn = DriverManager.getConnection(connectionUrl + "/" + databaseName, dbUsername, dbPassword);
-            return conn;
+            return DriverManager.getConnection(connectionUrl + "/" + databaseName, dbUsername, dbPassword);
         } catch (SQLException ex) {
             throw new DataAccessException("Failed to get connection", ex);
         }
