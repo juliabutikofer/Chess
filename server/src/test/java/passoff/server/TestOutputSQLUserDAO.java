@@ -2,7 +2,7 @@ package dataaccess;
 
 import model.UserData;
 
-public class TestSQLUserDAO {
+public class TestOutputSQLUserDAO {
     public static void main(String[] args) throws DataAccessException {
         SQLUserDAO userDAO = new SQLUserDAO();
 

@@ -4,7 +4,7 @@ import model.GameData;
 import chess.ChessGame;
 import java.util.List;
 
-public class TestSQLGameDAO {
+public class TestOutputSQLGameDAO {
     public static void main(String[] args) throws DataAccessException {
         SQLGameDAO gameDAO = new SQLGameDAO();
 
