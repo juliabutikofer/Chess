@@ -1,7 +1,5 @@
-package passoff.server;
+package dataaccess;
 
-import dataaccess.DataAccessException;
-import dataaccess.SQLAuthDAO;
 import model.AuthData;
 
 public class TestOutputSQLAuthDAO {
