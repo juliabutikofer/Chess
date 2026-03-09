@@ -32,7 +32,10 @@ public class UserService {
             throw new DataAccessException("already taken");
         }
 
-        UserData user = new UserData(req.username(), req.password(), req.email());
+        // hashing the password
+        String hashedPassword = BCrypt.hashpw(req.password(), BCrypt.gensalt());
+
+        UserData user = new UserData(req.username(), hashedPassword, req.email());
         users.insertUser(user);
 
         String token = UUID.randomUUID().toString();

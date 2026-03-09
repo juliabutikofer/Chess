@@ -24,10 +24,8 @@ public class SQLUserDAO implements UserDAO {
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             stmt.setString(1, user.username());
-
-            // ✅ Hash the password using BCrypt before storing
-            String hashedPassword = BCrypt.hashpw(user.password(), BCrypt.gensalt());
-            stmt.setString(2, hashedPassword);
+            //hash the password
+            stmt.setString(2, user.password());
 
             stmt.setString(3, user.email());
 
