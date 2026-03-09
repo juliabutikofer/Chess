@@ -24,9 +24,7 @@ public class SQLUserDAO implements UserDAO {
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             stmt.setString(1, user.username());
-            //hash the password
-            stmt.setString(2, user.password());
-
+            stmt.setString(2, user.password()); // <- store already hashed password
             stmt.setString(3, user.email());
 
             int affected = stmt.executeUpdate();
@@ -35,10 +33,7 @@ public class SQLUserDAO implements UserDAO {
             }
 
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    int id = generatedKeys.getInt(1);
-                    // Optional: store or use the generated ID
-                } else {
+                if (!generatedKeys.next()) {
                     throw new DataAccessException("Inserting user failed, no ID obtained.");
                 }
             }
@@ -70,6 +65,17 @@ public class SQLUserDAO implements UserDAO {
 
         } catch (SQLException e) {
             throw new DataAccessException("Failed to get user", e);
+        }
+    }
+
+    public void clearAll() throws DataAccessException {
+        try (Connection conn = DatabaseManager.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate("DELETE FROM Games");
+            stmt.executeUpdate("DELETE FROM Users");
+            stmt.executeUpdate("DELETE FROM Sessions"); // if you have an auth table
+        } catch (SQLException e) {
+            throw new DataAccessException("Failed to clear all tables", e);
         }
     }
 }
