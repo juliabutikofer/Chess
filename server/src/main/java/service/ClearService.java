@@ -17,9 +17,23 @@ public class ClearService {
         this.games = games;
     }
 
-    public void clear() throws DataAccessException {
-        users.clear();
-        auths.clear();
-        games.clear();
+    public void clear() {
+        try {
+            if (users != null) {
+                users.clear();
+            }
+            if (auths != null) {
+                auths.clear();
+            }
+            if (games != null) {
+                games.clear();
+            }
+        } catch (DataAccessException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to clear database", e);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Unexpected error during clear", e);
+        }
     }
 }

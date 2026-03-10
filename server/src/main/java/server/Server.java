@@ -47,9 +47,19 @@ public class Server {
     }
 
     public int run(int desiredPort) {
+
+        try {
+            DatabaseManager.createDatabase();
+            DatabaseManager.initializeTables();
+        } catch (DataAccessException e) {
+            e.printStackTrace();
+            return -1; // or throw, but returning is fine
+        }
+
         javalin.start(desiredPort);
         return javalin.port();
     }
+
 
     public void stop() {
         javalin.stop();
@@ -161,10 +171,9 @@ public class Server {
         try {
             clearService.clear();
             ctx.status(200).json(Map.of());
-        } catch (DataAccessException e) {
-            ctx.status(500).json(Map.of("message", "Error: internal server error"));
         } catch (Exception e) {
-            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
+            e.printStackTrace();
+            ctx.status(500).json(Map.of("message", "Error: internal server error"));
         }
     }
 
