@@ -68,4 +68,19 @@ public class SQLGameDAOTest {
         GameData game = gameDAO.getGame(9999);
         assertNull(game);
     }
+
+    @Test
+    void updateNonExistentGame_noEffect() throws DataAccessException {
+        // Table is empty from @BeforeEach clear()
+
+        ChessGame chess = new ChessGame();
+        GameData ghostGame = new GameData(9999, "alice", "bob", "Ghost", chess);
+
+        gameDAO.updateGame(ghostGame);
+
+        GameData retrieved = gameDAO.getGame(9999);
+        assertNull(retrieved, "Updating a non-existent game should not create it");
+    }
+
+
 }
