@@ -18,7 +18,7 @@ public class SQLUserDAOTest {
     // Positive Tests
 
     @Test
-    void insertUser_success() throws DataAccessException {
+    void insertUser() throws DataAccessException {
         UserData user = new UserData("alice", "password123", "alice@example.com");
         userDAO.insertUser(user);
 
@@ -28,7 +28,7 @@ public class SQLUserDAOTest {
     }
 
     @Test
-    void getUser_success() throws DataAccessException {
+    void getUser() throws DataAccessException {
         UserData user = new UserData("carol", "pwd", "carol@example.com");
         userDAO.insertUser(user);
 
@@ -38,7 +38,7 @@ public class SQLUserDAOTest {
     }
 
     @Test
-    void clearUsers_success() throws DataAccessException {
+    void clearUsers() throws DataAccessException {
         userDAO.insertUser(new UserData("bob", "pwd", "bob@example.com"));
         userDAO.clear();
         assertNull(userDAO.getUser("bob"), "User table should be empty after clear");
@@ -47,7 +47,7 @@ public class SQLUserDAOTest {
     // Negative Tests
 
     @Test
-    void insertDuplicateUser_shouldThrowException() throws DataAccessException {
+    void insertDuplicateUser() throws DataAccessException {
         userDAO.insertUser(new UserData("alice", "password123", "alice@example.com"));
 
         UserData duplicate = new UserData("alice", "password456", "alice2@example.com");
@@ -59,13 +59,13 @@ public class SQLUserDAOTest {
     }
 
     @Test
-    void getNonExistentUser_shouldReturnNull() throws DataAccessException {
+    void getNonExistentUser() throws DataAccessException {
         UserData user = userDAO.getUser("nonexistent");
         assertNull(user, "Non-existent user should return null");
     }
 
     @Test
-    void clear_onEmpty_noError() throws DataAccessException {
+    void clearOnEmpty() throws DataAccessException {
         userDAO.clear(); // should not throw
         assertNull(userDAO.getUser("anything"),
                 "Clearing an empty table should still leave it empty");

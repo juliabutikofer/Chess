@@ -17,8 +17,9 @@ public class SQLGameDAOTest {
     }
 
     // Positive Tests
+
     @Test
-    void insertAndRetrieveGame_success() throws DataAccessException {
+    void insertAndRetrieveGame() throws DataAccessException {
         ChessGame chess = new ChessGame();
         GameData game = new GameData(0, "alice", "bob", "Epic Match", chess);
 
@@ -33,7 +34,7 @@ public class SQLGameDAOTest {
     }
 
     @Test
-    void listGames_success() throws DataAccessException {
+    void listGames() throws DataAccessException {
         gameDAO.insertGame(new GameData(0, "alice", "bob", "G1", new ChessGame()));
         gameDAO.insertGame(new GameData(0, "carol", "dave", "G2", new ChessGame()));
 
@@ -42,7 +43,7 @@ public class SQLGameDAOTest {
     }
 
     @Test
-    void updateGame_success() throws DataAccessException {
+    void updateGame() throws DataAccessException {
         ChessGame chess = new ChessGame();
         GameData game = new GameData(0, "alice", "bob", "Match", chess);
         int gameID = gameDAO.insertGame(game);
@@ -55,7 +56,7 @@ public class SQLGameDAOTest {
     }
 
     @Test
-    void clearGames_success() throws DataAccessException {
+    void clearGames() throws DataAccessException {
         gameDAO.insertGame(new GameData(0, "alice", "bob", "G1", new ChessGame()));
         gameDAO.clear();
         List<GameData> games = gameDAO.listGames();
@@ -63,16 +64,15 @@ public class SQLGameDAOTest {
     }
 
     // Negative Tests
+
     @Test
-    void getNonExistentGame_shouldReturnNull() throws DataAccessException {
+    void getNonExistentGame() throws DataAccessException {
         GameData game = gameDAO.getGame(9999);
         assertNull(game);
     }
 
     @Test
-    void updateNonExistentGame_noEffect() throws DataAccessException {
-        // Table is empty from @BeforeEach clear()
-
+    void updateNonExistentGame() throws DataAccessException {
         ChessGame chess = new ChessGame();
         GameData ghostGame = new GameData(9999, "alice", "bob", "Ghost", chess);
 
@@ -81,6 +81,4 @@ public class SQLGameDAOTest {
         GameData retrieved = gameDAO.getGame(9999);
         assertNull(retrieved, "Updating a non-existent game should not create it");
     }
-
-
 }

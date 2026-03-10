@@ -81,7 +81,10 @@ public class DatabaseManager {
 
     private static void loadPropertiesFromResources() {
         try (var propStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("db.properties")) {
-            if (propStream == null) throw new Exception("Unable to load db.properties");
+            if (propStream == null) {
+                throw new Exception("Unable to load db.properties");
+            }
+
             Properties props = new Properties();
             props.load(propStream);
             loadProperties(props);

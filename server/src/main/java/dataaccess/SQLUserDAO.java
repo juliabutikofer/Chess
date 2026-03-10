@@ -67,15 +67,4 @@ public class SQLUserDAO implements UserDAO {
             throw new DataAccessException("Failed to get user", e);
         }
     }
-
-    public void clearAll() throws DataAccessException {
-        try (Connection conn = DatabaseManager.getConnection();
-             Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate("DELETE FROM Games");
-            stmt.executeUpdate("DELETE FROM Users");
-            stmt.executeUpdate("DELETE FROM Sessions"); // if you have an auth table
-        } catch (SQLException e) {
-            throw new DataAccessException("Failed to clear all tables", e);
-        }
-    }
 }

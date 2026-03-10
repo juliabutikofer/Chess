@@ -23,9 +23,10 @@ class SQLAuthDAOTest {
         userDAO.insertUser(new UserData("alice", "password123", "alice@example.com"));
     }
 
-    // Positive test cases
+    // Positive Tests
+
     @Test
-    void insertAuth_success() throws DataAccessException {
+    void insertAuth() throws DataAccessException {
         AuthData auth = new AuthData("token123", "alice");
         authDAO.insertAuth(auth);
 
@@ -36,7 +37,7 @@ class SQLAuthDAOTest {
     }
 
     @Test
-    void deleteAuth_success() throws DataAccessException {
+    void deleteAuth() throws DataAccessException {
         AuthData auth = new AuthData("token456", "alice");
         authDAO.insertAuth(auth);
 
@@ -47,7 +48,7 @@ class SQLAuthDAOTest {
     }
 
     @Test
-    void clearAuthTokens_success() throws DataAccessException {
+    void clearAuthTokens() throws DataAccessException {
         authDAO.insertAuth(new AuthData("token789", "alice"));
         authDAO.insertAuth(new AuthData("tokenABC", "alice"));
 
@@ -57,9 +58,10 @@ class SQLAuthDAOTest {
         assertNull(authDAO.getAuth("tokenABC"));
     }
 
-    // Negative test cases
+    // Negative Tests
+
     @Test
-    void insertAuth_nonExistentUser_fails() {
+    void insertAuthNonExistentUser() {
         AuthData auth = new AuthData("badToken", "bob"); // 'bob' not in Users table
 
         DataAccessException exception = assertThrows(DataAccessException.class, () -> {
@@ -71,13 +73,13 @@ class SQLAuthDAOTest {
     }
 
     @Test
-    void getAuth_nonExistentToken_returnsNull() throws DataAccessException {
+    void getAuthNonExistentToken() throws DataAccessException {
         AuthData retrieved = authDAO.getAuth("noTokenHere");
         assertNull(retrieved, "Retrieving non-existent token should return null");
     }
 
     @Test
-    void deleteAuth_nonExistentToken_noError() throws DataAccessException {
+    void deleteAuthNonExistentToken() throws DataAccessException {
         // Should not throw exception
         authDAO.deleteAuth("ghostToken");
     }
