@@ -2,4 +2,4 @@ package client.dtos;
 
 import java.util.List;
 
-public record GameData(int gameId, String gameName, List<String> players) {}
+public record GameData(int id, String name, List<String> players) {}
