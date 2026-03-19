@@ -65,7 +65,6 @@ public class ServerFacadeTests {
         assertTrue(ex.getMessage().contains("failed"));
     }
 
-
     // LOGIN
     @Test
     public void testLoginSuccess() throws Exception {
@@ -83,5 +82,21 @@ public class ServerFacadeTests {
 
         Exception ex = assertThrows(Exception.class, () -> facade.login(username, "wrongpass"));
         assertTrue(ex.getMessage().contains("failed"));
+    }
+
+    // LOGOUT
+    @Test
+    public void testLogoutSuccess() throws Exception {
+        String username = "logoutUser_" + System.nanoTime();
+        facade.register(username, "pass", username + "@email.com");
+        facade.logout();
+        assertNull(facade.getAuthToken());
+    }
+
+    @Test
+    public void testLogoutWithoutLogin() {
+        ServerFacade newFacade = new ServerFacade(serverPort);
+        IllegalStateException ex = assertThrows(IllegalStateException.class, newFacade::logout);
+        assertTrue(ex.getMessage().contains("Not logged in"));
     }
 }
