@@ -120,17 +120,53 @@ public class ServerFacadeTests {
     public void testListGamesSuccess() throws Exception {
         String username = "listUser_" + System.nanoTime();
         facade.register(username, "pass", username + "@email.com");
-        facade.createGame("ListGame1");
+        String gameName = "ListGame_" + System.nanoTime();
+        facade.createGame(gameName);
 
         List<GameData> games = facade.listGames();
         assertFalse(games.isEmpty());
-        assertEquals("ListGame1", games.get(0).name());
+
+        boolean found = games.stream().anyMatch(g -> g.name().equals(gameName));
+        assertTrue(found, "Created game not found in listGames");
     }
 
     @Test
     public void testListGamesWithoutLogin() {
         ServerFacade newFacade = new ServerFacade(serverPort);
         IllegalStateException ex = assertThrows(IllegalStateException.class, newFacade::listGames);
+        assertTrue(ex.getMessage().contains("Not logged in"));
+    }
+
+    // JOIN GAME
+    @Test
+    public void testJoinGameSuccess() throws Exception {
+        String creator = "joinCreator_" + System.nanoTime();
+        facade.register(creator, "pass", creator + "@email.com");
+        String gameName = "JoinGame_" + System.nanoTime();
+        facade.createGame(gameName);
+
+        int gameId = facade.listGames().stream()
+                .filter(g -> g.name().equals(gameName))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Game not found"))
+                .id();
+
+        ServerFacade player = new ServerFacade(serverPort);
+        String joiner = "joinUser_" + System.nanoTime();
+        player.register(joiner, "pass", joiner + "@email.com");
+
+        player.joinGame(gameId, "white");
+    }
+
+    @Test
+    public void testJoinGameWithoutLogin() throws Exception {
+        String username = "joinUser2_" + System.nanoTime();
+        facade.register(username, "pass", username + "@email.com");
+        facade.createGame("JoinGame2");
+        int gameId = facade.listGames().get(0).id();
+
+        ServerFacade newFacade = new ServerFacade(serverPort);
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> newFacade.joinGame(gameId, "white"));
         assertTrue(ex.getMessage().contains("Not logged in"));
     }
 
