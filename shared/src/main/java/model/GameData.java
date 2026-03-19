@@ -9,6 +9,5 @@ public record GameData(
         String blackUsername,
         String gameName,
         ChessGame game
-        // add this to the record
 ) {
 }

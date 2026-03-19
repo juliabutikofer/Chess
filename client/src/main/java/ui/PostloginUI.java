@@ -33,8 +33,23 @@ public class PostloginUI {
                 case "list games" -> listGames();
                 case "play game" -> playGame();
                 case "observe game" -> observeGame();
+                case "reset" -> {
+                    resetDatabase();
+                    return; // ⭐ return to prelogin menu after reset
+                }
                 default -> System.out.println("Unknown command. Type 'help'.");
             }
+        }
+    }
+
+    private void resetDatabase() {
+        try {
+            facade.clearDatabase();   // DELETE /db
+            System.out.println("Database cleared!");
+            // ⭐ DO NOT try to modify authToken or state here.
+            // ⭐ Just return to main UI (handled by the return in start()).
+        } catch (Exception e) {
+            System.out.println("Reset failed: " + e.getMessage());
         }
     }
 
@@ -46,6 +61,7 @@ public class PostloginUI {
         System.out.println("  list games   - list all existing games");
         System.out.println("  play game    - join a game to play");
         System.out.println("  observe game - join a game to observe");
+        System.out.println("  reset        - reset all games");
     }
 
     private void logout() {
@@ -78,7 +94,8 @@ public class PostloginUI {
 
             for (int i = 0; i < lastGames.size(); i++) {
                 GameData g = lastGames.get(i);
-                System.out.printf("%d. %s (Players: %s)%n", i + 1, g.name(), String.join(", ", g.players()));
+                System.out.printf("%d. %s (Players: %s)%n",
+                        i + 1, g.name(), String.join(", ", g.players()));
             }
         } catch (Exception e) {
             System.out.println("List games failed: " + e.getMessage());

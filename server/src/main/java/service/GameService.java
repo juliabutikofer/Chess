@@ -50,7 +50,7 @@ public class GameService {
     }
 
     public void joinGame(JoinGameRequest req, String authToken) throws DataAccessException {
-        if (req == null || req.playerColor() == null) {
+        if (req == null) {
             throw new DataAccessException("bad request");
         }
 
@@ -65,7 +65,15 @@ public class GameService {
         }
 
         String username = auth.username();
-        String color = req.playerColor().toUpperCase();
+        String color = req.playerColor(); // may be null
+
+        if (color == null) {
+            // OBSERVER — do nothing except allow access
+            // No need to modify the game record
+            return;
+        }
+
+        color = color.toUpperCase();
 
         switch (color) {
             case "WHITE" -> {

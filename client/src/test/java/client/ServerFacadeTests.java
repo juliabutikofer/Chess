@@ -173,13 +173,11 @@ public class ServerFacadeTests {
     // OBSERVE GAME
     @Test
     public void testObserveGameSuccess() throws Exception {
-        // Step 1: Creator registers and creates a game
         String creator = "obsCreator_" + System.nanoTime();
         facade.register(creator, "pass", creator + "@email.com");
         String gameName = "ObsGame_" + System.nanoTime();
         facade.createGame(gameName);
 
-        // Step 2: Verify the game exists and get its ID
         List<GameData> games = facade.listGames();
         int gameId = games.stream()
                 .filter(g -> g.name().equals(gameName))
@@ -189,17 +187,14 @@ public class ServerFacadeTests {
 
         System.out.println("Using game ID: " + gameId);
 
-        // Step 3: Observer registers as a separate user
         ServerFacade observer = new ServerFacade(serverPort);
         String observerName = "obsUser_" + System.nanoTime();
         observer.register(observerName, "pass", observerName + "@email.com");
 
-        // Step 4: Verify the observer has a valid auth token
         String token = observer.getAuthToken();
         System.out.println("Observer auth token: " + token);
         assertNotNull(token, "Observer failed to get auth token");
 
-        // Step 5: Observer requests to observe the game
         observer.observeGame(gameId);
 
         System.out.println("Observe game test passed successfully!");

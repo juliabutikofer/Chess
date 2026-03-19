@@ -4,9 +4,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 import com.google.gson.Gson;
 
@@ -67,8 +65,8 @@ public class ServerFacade {
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(new URI(baseUrl + "/session"))
-                .header("Content-Type", "application/json")
-                .method("DELETE", HttpRequest.BodyPublishers.ofString(requestBody))
+                .header("Authorization", authToken)
+                .DELETE()
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -104,12 +102,18 @@ public class ServerFacade {
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 200) throw new Exception("List games failed: " + response.body());
+        if (response.statusCode() != 200) {
+            throw new Exception("List games failed: " + response.body());
+        }
 
         ListGamesResult result = gson.fromJson(response.body(), ListGamesResult.class);
-        Collection<GameData> games = result.games();
-        return new ArrayList<>(games);
+
+        List<GameData> games = new ArrayList<>(result.games());
+        games.sort(Comparator.comparingInt(GameData::id)); // FIX
+
+        return games;
     }
+
 
     public void joinGame(int gameId, String color) throws Exception {
         if (authToken == null) throw new IllegalStateException("Not logged in");
@@ -131,14 +135,36 @@ public class ServerFacade {
     public void observeGame(int gameId) throws Exception {
         if (authToken == null) throw new IllegalStateException("Not logged in");
 
+        ObserveGameRequest requestObj = new ObserveGameRequest(gameId);
+        String requestBody = gson.toJson(requestObj);
+
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI(baseUrl + "/game/" + gameId))
+                .uri(new URI(baseUrl + "/game"))
+                .header("Content-Type", "application/json")
                 .header("Authorization", authToken)
-                .POST(HttpRequest.BodyPublishers.noBody())
+                .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 200) throw new Exception("Observe game failed: " + response.body());
+
+        if (response.statusCode() != 200) {
+            System.out.println("OBSERVE RESPONSE: " + response.body());
+            throw new Exception("Observe game failed: " + response.body());
+        }
+    }
+
+
+
+    public void clearDatabase() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI(baseUrl + "/db"))
+                .DELETE()
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new Exception("Database reset failed: " + response.body());
+        }
     }
 
     public String getAuthToken() {
