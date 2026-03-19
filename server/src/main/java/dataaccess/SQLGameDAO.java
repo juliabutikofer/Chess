@@ -13,12 +13,12 @@ public class SQLGameDAO implements GameDAO {
 
     @Override
     public void clear() throws DataAccessException {
-        String sql = "DELETE FROM Games";
+        String sqlGames = "DELETE FROM Games";
         try (Connection conn = DatabaseManager.getConnection();
              Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate(sql);
+            stmt.executeUpdate(sqlGames);
         } catch (SQLException e) {
-            throw new DataAccessException("Failed to clear Games table", e);
+            throw new DataAccessException("Failed to clear tables", e);
         }
     }
 
@@ -31,7 +31,7 @@ public class SQLGameDAO implements GameDAO {
             stmt.setString(1, game.whiteUsername());
             stmt.setString(2, game.blackUsername());
             stmt.setString(3, game.gameName());
-            stmt.setString(4, gson.toJson(game.game())); // serialize ChessGame
+            stmt.setString(4, gson.toJson(game.game()));
 
             int affected = stmt.executeUpdate();
             if (affected == 0) {
@@ -58,7 +58,6 @@ public class SQLGameDAO implements GameDAO {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, gameID);
-
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return new GameData(
