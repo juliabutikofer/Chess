@@ -64,4 +64,24 @@ public class ServerFacadeTests {
         });
         assertTrue(ex.getMessage().contains("failed"));
     }
+
+
+    // LOGIN
+    @Test
+    public void testLoginSuccess() throws Exception {
+        String username = "loginUser_" + System.nanoTime();
+        facade.register(username, "pass", username + "@email.com");
+        LoginResult result = facade.login(username, "pass");
+        assertNotNull(result);
+        assertNotNull(result.authToken());
+    }
+
+    @Test
+    public void testLoginWrongPassword() throws Exception {
+        String username = "loginUser2_" + System.nanoTime();
+        facade.register(username, "pass", username + "@email.com");
+
+        Exception ex = assertThrows(Exception.class, () -> facade.login(username, "wrongpass"));
+        assertTrue(ex.getMessage().contains("failed"));
+    }
 }
