@@ -99,4 +99,20 @@ public class ServerFacadeTests {
         IllegalStateException ex = assertThrows(IllegalStateException.class, newFacade::logout);
         assertTrue(ex.getMessage().contains("Not logged in"));
     }
+
+    // CREATE GAME
+    @Test
+    public void testCreateGameSuccess() throws Exception {
+        String username = "gameUser_" + System.nanoTime();
+        facade.register(username, "pass", username + "@email.com");
+        facade.createGame("Test Game");
+    }
+
+    @Test
+    public void testCreateGameWithoutLogin() {
+        ServerFacade newFacade = new ServerFacade(serverPort);
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> newFacade.createGame("NoLoginGame"));
+        assertTrue(ex.getMessage().contains("Not logged in"));
+    }
+
 }
