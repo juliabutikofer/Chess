@@ -115,4 +115,23 @@ public class ServerFacadeTests {
         assertTrue(ex.getMessage().contains("Not logged in"));
     }
 
+    // LIST GAMES
+    @Test
+    public void testListGamesSuccess() throws Exception {
+        String username = "listUser_" + System.nanoTime();
+        facade.register(username, "pass", username + "@email.com");
+        facade.createGame("ListGame1");
+
+        List<GameData> games = facade.listGames();
+        assertFalse(games.isEmpty());
+        assertEquals("ListGame1", games.get(0).name());
+    }
+
+    @Test
+    public void testListGamesWithoutLogin() {
+        ServerFacade newFacade = new ServerFacade(serverPort);
+        IllegalStateException ex = assertThrows(IllegalStateException.class, newFacade::listGames);
+        assertTrue(ex.getMessage().contains("Not logged in"));
+    }
+
 }
