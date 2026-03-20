@@ -18,7 +18,7 @@ public class PostloginUI {
     }
 
     public void start() {
-        System.out.println("Welcome! You are now logged in.");
+        System.out.println("Welcome!");
         while (true) {
             System.out.print("postlogin> ");
             String command = scanner.nextLine().trim().toLowerCase();
@@ -35,7 +35,7 @@ public class PostloginUI {
                 case "observe game" -> observeGame();
                 case "reset" -> {
                     resetDatabase();
-                    return; // ⭐ return to prelogin menu after reset
+                    return; // return to prelogin menu after reset
                 }
                 default -> System.out.println("Unknown command. Type 'help'.");
             }
@@ -44,10 +44,8 @@ public class PostloginUI {
 
     private void resetDatabase() {
         try {
-            facade.clearDatabase();   // DELETE /db
-            System.out.println("Database cleared!");
-            // ⭐ DO NOT try to modify authToken or state here.
-            // ⭐ Just return to main UI (handled by the return in start()).
+            facade.clearDatabase();
+            System.out.println("Database cleared! Returning to prelogin menu.");
         } catch (Exception e) {
             System.out.println("Reset failed: " + e.getMessage());
         }
@@ -78,7 +76,7 @@ public class PostloginUI {
         String name = scanner.nextLine().trim();
         try {
             facade.createGame(name);
-            System.out.println("Game created successfully!");
+            System.out.println("Game '" + name + "' created successfully!");
         } catch (Exception e) {
             System.out.println("Create game failed: " + e.getMessage());
         }
@@ -94,8 +92,8 @@ public class PostloginUI {
 
             for (int i = 0; i < lastGames.size(); i++) {
                 GameData g = lastGames.get(i);
-                System.out.printf("%d. %s (Players: %s)%n",
-                        i + 1, g.name(), String.join(", ", g.players()));
+                String players = g.players().isEmpty() ? "No players yet" : String.join(", ", g.players());
+                System.out.printf("%d. %s (Players: %s)%n", i + 1, g.name(), players);
             }
         } catch (Exception e) {
             System.out.println("List games failed: " + e.getMessage());
@@ -111,13 +109,22 @@ public class PostloginUI {
         try {
             System.out.print("Enter game number to join: ");
             int number = Integer.parseInt(scanner.nextLine());
+            if (number < 1 || number > lastGames.size()) {
+                System.out.println("Invalid game number.");
+                return;
+            }
+
             GameData game = lastGames.get(number - 1);
 
             System.out.print("Enter color (white/black): ");
             String color = scanner.nextLine().trim().toLowerCase();
+            if (!color.equals("white") && !color.equals("black")) {
+                System.out.println("Invalid color. Choose 'white' or 'black'.");
+                return;
+            }
 
             facade.joinGame(game.id(), color);
-            System.out.println("Joined game as " + color + "!");
+            System.out.println("Joined game '" + game.name() + "' as " + color + "!");
 
             ChessBoardPrinter.drawInitialBoard(color);
 
@@ -135,10 +142,28 @@ public class PostloginUI {
         try {
             System.out.print("Enter game number to observe: ");
             int number = Integer.parseInt(scanner.nextLine());
+            if (number < 1 || number > lastGames.size()) {
+                System.out.println("Invalid game number.");
+                return;
+            }
+
             GameData game = lastGames.get(number - 1);
 
+            // Prevent observing a game you are already playing
+            String username = facade.getUsername(); // must return logged-in username
+            if (game.players().contains(username)) {
+                System.out.println("Cannot observe this game: you are already a player.");
+                return;
+            }
+
+            // Prevent observing a game with no players
+            if (game.players().isEmpty()) {
+                System.out.println("Cannot observe a game with no players yet.");
+                return;
+            }
+
             facade.observeGame(game.id());
-            System.out.println("Observing game!");
+            System.out.println("Observing game '" + game.name() + "'!");
 
             ChessBoardPrinter.drawInitialBoard("white");
 

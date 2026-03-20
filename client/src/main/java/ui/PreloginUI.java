@@ -48,8 +48,8 @@ public class PreloginUI {
             System.out.print("Password: ");
             String password = scanner.nextLine().trim();
 
-            LoginResult result = facade.login(username, password);
-            System.out.println("Login successful! Auth token: " + result.authToken());
+            facade.login(username, password);
+            System.out.println("Login successful!");
 
             PostloginUI postlogin = new PostloginUI(facade, scanner);
             postlogin.start();
@@ -68,8 +68,8 @@ public class PreloginUI {
             System.out.print("Email: ");
             String email = scanner.nextLine().trim();
 
-            RegisterResult result = facade.register(username, password, email);
-            System.out.println("Registration successful! Auth token: " + result.authToken());
+            facade.register(username, password, email);
+            System.out.println("Registration successful! You are now logged in.");
 
             PostloginUI postlogin = new PostloginUI(facade, scanner);
             postlogin.start();

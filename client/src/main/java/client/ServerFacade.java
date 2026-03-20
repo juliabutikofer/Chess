@@ -13,6 +13,7 @@ public class ServerFacade {
     private final String baseUrl;
     private String authToken;
     private final HttpClient client;
+    private String username;
     private final Gson gson;
 
     public ServerFacade(int port) {
@@ -189,5 +190,8 @@ public class ServerFacade {
 
     public String getAuthToken() {
         return authToken;
+    }
+
+    public String getUsername() { return username;
     }
 }
