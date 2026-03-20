@@ -159,8 +159,9 @@ public class ServerFacade {
         ObserveGameRequest requestObj = new ObserveGameRequest(gameId);
         String requestBody = gson.toJson(requestObj);
 
+        //new server endpoint
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI(baseUrl + "/game"))
+                .uri(new URI(baseUrl + "/game/observe"))
                 .header("Content-Type", "application/json")
                 .header("Authorization", authToken)
                 .PUT(HttpRequest.BodyPublishers.ofString(requestBody))

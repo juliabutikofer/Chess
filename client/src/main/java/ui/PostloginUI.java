@@ -149,23 +149,14 @@ public class PostloginUI {
 
             GameData game = lastGames.get(number - 1);
 
-            // Prevent observing a game you are already playing
-            String username = facade.getUsername(); // must return logged-in username
-            if (game.players().contains(username)) {
+            //can't observe your own game
+            if (game.players().contains(facade.getUsername())) {
                 System.out.println("Cannot observe this game: you are already a player.");
                 return;
             }
 
-            // Prevent observing a game with no players
-            if (game.players().isEmpty()) {
-                System.out.println("Cannot observe a game with no players yet.");
-                return;
-            }
-
-            facade.observeGame(game.id());
-            System.out.println("Observing game '" + game.name() + "'!");
-
-            ChessBoardPrinter.drawInitialBoard("white");
+            System.out.println("Observing game '" + game.name() + "' (read-only):");
+            ChessBoardPrinter.drawInitialBoard("white"); // just for demonstration
 
         } catch (Exception e) {
             System.out.println("Observe game failed: " + e.getMessage());

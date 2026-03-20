@@ -17,6 +17,23 @@ public class GameService {
         this.auths = auths;
     }
 
+    public void observeGame(ObserveGameRequest req, String token) throws DataAccessException {
+        GameData game = games.getGame(req.gameID());
+        if (game == null) {
+            throw new DataAccessException("bad request");
+        }
+
+        AuthData auth = auths.getAuth(token);
+        if (auth == null) {
+            throw new DataAccessException("unauthorized");
+        }
+        String username = auth.username();
+
+        if (username.equals(game.whiteUsername()) || username.equals(game.blackUsername())) {
+            throw new DataAccessException("Cannot observe: already a player");
+        }
+    }
+
     public ListGamesResult listGames(String authToken) throws DataAccessException {
         AuthData auth = auths.getAuth(authToken);
         if (auth == null) {

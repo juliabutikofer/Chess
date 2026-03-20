@@ -44,6 +44,28 @@ public class Server {
         javalin.get("/game", this::listGames);
         javalin.post("/game", this::createGame);
         javalin.put("/game", this::joinGame);
+        javalin.put("/game/observe", this::observeGame);
+    }
+
+    private void observeGame(Context ctx) {
+        try {
+            String token = requireAuthToken(ctx);
+
+            ObserveGameRequest req = ctx.bodyAsClass(ObserveGameRequest.class);
+
+            if (req == null || req.gameID() <= 0) {
+                ctx.status(400).json(Map.of("message", "Error: bad request"));
+                return;
+            }
+
+            gameService.observeGame(req, token);
+
+            ctx.status(200).json(Map.of()); // success
+        } catch (DataAccessException e) {
+            handleDataAccessException(e, ctx);
+        } catch (Exception e) {
+            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
+        }
     }
 
     public int run(int desiredPort) {
