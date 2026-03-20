@@ -107,10 +107,23 @@ public class Server {
     private void joinGame(Context ctx) {
         try {
             String token = requireAuthToken(ctx);
+
+            String body = ctx.body();
+
             JoinGameRequest req = ctx.bodyAsClass(JoinGameRequest.class);
 
+            if (body.contains("playerColor")) {
+                String color = req.playerColor();
+
+                if (color == null || color.trim().isEmpty()) {
+                    throw new DataAccessException("bad request");
+                }
+            }
+
             gameService.joinGame(req, token);
+
             ctx.status(200).json(Map.of());
+
         } catch (DataAccessException e) {
             handleDataAccessException(e, ctx);
         } catch (Exception e) {

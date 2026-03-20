@@ -65,42 +65,40 @@ public class GameService {
         }
 
         String username = auth.username();
-        String color = req.playerColor(); // may be null
+        String color = req.playerColor();
 
-        if (color == null) {
-            // OBSERVER — do nothing except allow access
-            // No need to modify the game record
-            return;
+        if (color == null || color.trim().isEmpty()) {
+            throw new DataAccessException("bad request");
         }
 
-        color = color.toUpperCase();
+        color = color.trim().toUpperCase();
 
-        switch (color) {
-            case "WHITE" -> {
-                if (game.whiteUsername() != null) {
-                    throw new DataAccessException("already taken");
-                }
-                game = new GameData(
-                        game.gameID(),
-                        username,
-                        game.blackUsername(),
-                        game.gameName(),
-                        game.game()
-                );
+        if (!color.equals("WHITE") && !color.equals("BLACK")) {
+            throw new DataAccessException("bad request");
+        }
+
+        if (color.equals("WHITE")) {
+            if (game.whiteUsername() != null) {
+                throw new DataAccessException("already taken");
             }
-            case "BLACK" -> {
-                if (game.blackUsername() != null) {
-                    throw new DataAccessException("already taken");
-                }
-                game = new GameData(
-                        game.gameID(),
-                        game.whiteUsername(),
-                        username,
-                        game.gameName(),
-                        game.game()
-                );
+            game = new GameData(
+                    game.gameID(),
+                    username,
+                    game.blackUsername(),
+                    game.gameName(),
+                    game.game()
+            );
+        } else { // BLACK
+            if (game.blackUsername() != null) {
+                throw new DataAccessException("already taken");
             }
-            default -> throw new DataAccessException("bad request");
+            game = new GameData(
+                    game.gameID(),
+                    game.whiteUsername(),
+                    username,
+                    game.gameName(),
+                    game.game()
+            );
         }
 
         games.updateGame(game);
