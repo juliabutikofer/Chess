@@ -32,7 +32,9 @@ public class ServerFacade {
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 200) throw new Exception("Login failed: " + response.body());
+        if (response.statusCode() != 200) {
+            throw new Exception("Login failed: " + response.body());
+        }
 
         LoginResult result = gson.fromJson(response.body(), LoginResult.class);
         this.authToken = result.authToken();
@@ -50,7 +52,9 @@ public class ServerFacade {
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 200) throw new Exception("Registration failed: " + response.body());
+        if (response.statusCode() != 200) {
+            throw new Exception("Registration failed: " + response.body());
+        }
 
         RegisterResult result = gson.fromJson(response.body(), RegisterResult.class);
         this.authToken = result.authToken();
@@ -58,7 +62,9 @@ public class ServerFacade {
     }
 
     public void logout() throws Exception {
-        if (authToken == null) throw new IllegalStateException("Not logged in");
+        if (authToken == null) {
+            throw new IllegalStateException("Not logged in");
+        }
 
         LogoutRequest requestObj = new LogoutRequest(authToken);
         String requestBody = gson.toJson(requestObj);
@@ -70,13 +76,17 @@ public class ServerFacade {
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 200) throw new Exception("Logout failed: " + response.body());
+        if (response.statusCode() != 200) {
+            throw new Exception("Logout failed: " + response.body());
+        }
 
         authToken = null;
     }
 
     public void createGame(String gameName) throws Exception {
-        if (authToken == null) throw new IllegalStateException("Not logged in");
+        if (authToken == null) {
+            throw new IllegalStateException("Not logged in");
+        }
 
         CreateGameRequest requestObj = new CreateGameRequest(gameName);
         String requestBody = gson.toJson(requestObj);
@@ -89,11 +99,15 @@ public class ServerFacade {
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 200) throw new Exception("Create game failed: " + response.body());
+        if (response.statusCode() != 200) {
+            throw new Exception("Create game failed: " + response.body());
+        }
     }
 
     public List<GameData> listGames() throws Exception {
-        if (authToken == null) throw new IllegalStateException("Not logged in");
+        if (authToken == null) {
+            throw new IllegalStateException("Not logged in");
+        }
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(new URI(baseUrl + "/game"))
@@ -116,7 +130,9 @@ public class ServerFacade {
 
 
     public void joinGame(int gameId, String color) throws Exception {
-        if (authToken == null) throw new IllegalStateException("Not logged in");
+        if (authToken == null) {
+            throw new IllegalStateException("Not logged in");
+        }
 
         JoinGameRequest requestObj = new JoinGameRequest(color, gameId);
         String requestBody = gson.toJson(requestObj);
@@ -129,11 +145,15 @@ public class ServerFacade {
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 200) throw new Exception("Join game failed: " + response.body());
+        if (response.statusCode() != 200) {
+            throw new Exception("Join game failed: " + response.body());
+        }
     }
 
     public void observeGame(int gameId) throws Exception {
-        if (authToken == null) throw new IllegalStateException("Not logged in");
+        if (authToken == null) {
+            throw new IllegalStateException("Not logged in");
+        }
 
         ObserveGameRequest requestObj = new ObserveGameRequest(gameId);
         String requestBody = gson.toJson(requestObj);
