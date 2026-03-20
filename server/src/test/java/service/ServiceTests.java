@@ -3,6 +3,7 @@ import dataaccess.*;
 import model.*;
 import dto.*;
 
+import model.GameData;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
