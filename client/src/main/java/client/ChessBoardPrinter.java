@@ -1,75 +1,87 @@
 package client;
 
+import chess.ChessGame;
+import chess.ChessBoard;
+import chess.ChessPiece;
+import chess.ChessPosition;
+
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+
 public class ChessBoardPrinter {
 
-    // Draws the initial chessboard from the given perspective
-    public static void drawInitialBoard(String perspective) {
-        System.out.println("\nInitial Chess Board (" + perspective + " perspective):");
+    private static final int SQUARE_WIDTH = 3;
 
-        String[][] board = new String[8][8];
+    private static final String RESET_COLOR = "\u001b[0m";
+    private static final String WHITE_BG = "\u001b[47m"; // white squares
+    private static final String BLACK_BG = "\u001b[40m"; // black squares
+    private static final String RED_TEXT = "\u001b[31m";  // bottom of white perspective
+    private static final String BLUE_TEXT = "\u001b[34m"; // bottom of black perspective / opponent side
 
-        // Empty squares
-        for (int i = 0; i < 8; i++) {
-            for (int j = 0; j < 8; j++) {
-                board[i][j] = " . ";
+    public static void drawBoard(ChessGame game, String perspective) {
+        var out = new PrintStream(System.out, true, StandardCharsets.UTF_8);
+        boolean whitePerspective = perspective.equalsIgnoreCase("white");
+        ChessBoard board = game.getBoard();
+
+        printFiles(out, whitePerspective);
+
+        for (int row = 1; row <= 8; row++) {
+            int displayRow = whitePerspective ? 9 - row : row;
+            out.print(displayRow + " ");
+
+            for (int col = 1; col <= 8; col++) {
+                int actualRow = whitePerspective ? row : 9 - row;
+                int actualCol = whitePerspective ? col : 9 - col;
+
+                ChessPosition pos = new ChessPosition(actualRow, actualCol);
+                ChessPiece piece = board.getPiece(pos);
+
+                boolean isWhiteSquare = (actualRow + actualCol) % 2 == 0;
+
+                printSquare(out, piece, isWhiteSquare, row, whitePerspective);
             }
+
+            out.println(" " + displayRow);
         }
 
-        // Pawns
-        for (int i = 0; i < 8; i++) {
-            board[1][i] = "p "; // black
-            board[6][i] = "P "; // white
-        }
+        printFiles(out, whitePerspective);
+        out.println();
+    }
 
-        // Rooks
-        board[0][0] = board[0][7] = "R ";
-        board[7][0] = board[7][7] = "r ";
-
-        // Knights
-        board[0][1] = board[0][6] = "N ";
-        board[7][1] = board[7][6] = "n ";
-
-        // Bishops
-        board[0][2] = board[0][5] = "B ";
-        board[7][2] = board[7][5] = "b ";
-
-        // Queens
-        board[0][3] = "Q ";
-        board[7][3] = "q ";
-
-        // Kings
-        board[0][4] = "K ";
-        board[7][4] = "k ";
-
-        // Print board
-        if (perspective.equalsIgnoreCase("white")) {
-            printWhitePerspective(board);
+    private static void printFiles(PrintStream out, boolean whitePerspective) {
+        out.print("  ");
+        if (whitePerspective) {
+            for (char file = 'a'; file <= 'h'; file++) {
+                out.print(" " + file + " ");
+            }
         } else {
-            printBlackPerspective(board);
+            for (char file = 'h'; file >= 'a'; file--) {
+                out.print(" " + file + " ");
+            }
         }
+        out.println();
     }
 
-    private static void printWhitePerspective(String[][] board) {
-        System.out.println("  a b c d e f g h");
-        for (int i = 0; i < 8; i++) {
-            System.out.print((8 - i) + " ");
-            for (int j = 0; j < 8; j++) {
-                System.out.print(board[i][j]);
-            }
-            System.out.println(" " + (8 - i));
-        }
-        System.out.println("  a b c d e f g h\n");
-    }
+    private static void printSquare(PrintStream out, ChessPiece piece, boolean isWhiteSquare,
+                                    int row, boolean whitePerspective) {
 
-    private static void printBlackPerspective(String[][] board) {
-        System.out.println("  h g f e d c b a");
-        for (int i = 7; i >= 0; i--) {
-            System.out.print((8 - i) + " ");
-            for (int j = 7; j >= 0; j--) {
-                System.out.print(board[i][j]);
+        out.print(isWhiteSquare ? WHITE_BG : BLACK_BG);
+
+        String symbol = " ";
+        if (piece != null) {
+            switch (piece.getPieceType()) {
+                case KING -> symbol = "K";
+                case QUEEN -> symbol = "Q";
+                case ROOK -> symbol = "R";
+                case BISHOP -> symbol = "B";
+                case KNIGHT -> symbol = "N";
+                case PAWN -> symbol = "P";
             }
-            System.out.println(" " + (8 - i));
         }
-        System.out.println("  h g f e d c b a\n");
+
+        boolean bottomSide = whitePerspective ? row >= 7 : row <= 2;
+        String textColor = bottomSide ? RED_TEXT : BLUE_TEXT;
+
+        out.print(textColor + " " + symbol + " " + RESET_COLOR);
     }
 }

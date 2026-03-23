@@ -16,6 +16,8 @@ public class PreloginUI {
 
     public void start() {
         System.out.println("Welcome to Chess Client!");
+        System.out.println("type 'help' to see commands");
+
         while (true) {
             System.out.print("prelogin> ");
             String command = scanner.nextLine().trim().toLowerCase();

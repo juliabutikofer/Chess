@@ -2,9 +2,10 @@ package ui;
 
 import client.ServerFacade;
 import client.dtos.GameData;
+import client.ChessBoardPrinter;
+
 import java.util.List;
 import java.util.Scanner;
-import client.ChessBoardPrinter;
 
 public class PostloginUI {
 
@@ -27,7 +28,7 @@ public class PostloginUI {
                 case "help" -> printHelp();
                 case "logout" -> {
                     logout();
-                    return; // return to prelogin menu
+                    return;
                 }
                 case "create game" -> createGame();
                 case "list games" -> listGames();
@@ -35,7 +36,7 @@ public class PostloginUI {
                 case "observe game" -> observeGame();
                 case "reset" -> {
                     resetDatabase();
-                    return; // return to prelogin menu after reset
+                    return;
                 }
                 default -> System.out.println("Unknown command. Type 'help'.");
             }
@@ -58,7 +59,7 @@ public class PostloginUI {
         System.out.println("  create game  - create a new game");
         System.out.println("  list games   - list all existing games");
         System.out.println("  play game    - join a game to play");
-        System.out.println("  observe game - join a game to observe");
+        System.out.println("  observe game - observe a game (white perspective)");
         System.out.println("  reset        - reset all games");
     }
 
@@ -114,7 +115,7 @@ public class PostloginUI {
                 return;
             }
 
-            GameData game = lastGames.get(number - 1);
+            GameData gameData = lastGames.get(number - 1);
 
             System.out.print("Enter color (white/black): ");
             String color = scanner.nextLine().trim().toLowerCase();
@@ -123,10 +124,11 @@ public class PostloginUI {
                 return;
             }
 
-            facade.joinGame(game.id(), color);
-            System.out.println("Joined game '" + game.name() + "' as " + color + "!");
+            facade.joinGame(gameData.id(), color);
+            System.out.println("Joined game '" + gameData.name() + "' as " + color + "!");
 
-            ChessBoardPrinter.drawInitialBoard(color);
+            // Print board from perspective
+            ChessBoardPrinter.drawBoard(gameData.game(), color);
 
         } catch (Exception e) {
             System.out.println("Play game failed: " + e.getMessage());
@@ -147,16 +149,11 @@ public class PostloginUI {
                 return;
             }
 
-            GameData game = lastGames.get(number - 1);
+            GameData gameData = lastGames.get(number - 1);
 
-            //can't observe your own game
-            if (game.players().contains(facade.getUsername())) {
-                System.out.println("Cannot observe this game: you are already a player.");
-                return;
-            }
+            System.out.println("Observing game '" + gameData.name() + "' (white perspective):");
 
-            System.out.println("Observing game '" + game.name() + "' (read-only):");
-            ChessBoardPrinter.drawInitialBoard("white"); // just for demonstration
+            ChessBoardPrinter.drawBoard(gameData.game(), "white");
 
         } catch (Exception e) {
             System.out.println("Observe game failed: " + e.getMessage());
