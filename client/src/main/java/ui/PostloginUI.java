@@ -48,7 +48,7 @@ public class PostloginUI {
             facade.clearDatabase();
             System.out.println("Database cleared! Returning to prelogin menu.");
         } catch (Exception e) {
-            System.out.println("Reset failed: " + e.getMessage());
+            printServerError(e);
         }
     }
 
@@ -68,18 +68,22 @@ public class PostloginUI {
             facade.logout();
             System.out.println("Logged out successfully!");
         } catch (Exception e) {
-            System.out.println("Logout failed: " + e.getMessage());
+            printServerError(e);
         }
     }
 
     private void createGame() {
         System.out.print("Enter new game name: ");
         String name = scanner.nextLine().trim();
+        if (name.isEmpty()) {
+            System.out.println("Error: game name cannot be empty");
+            return;
+        }
         try {
             facade.createGame(name);
             System.out.println("Game '" + name + "' created successfully!");
         } catch (Exception e) {
-            System.out.println("Create game failed: " + e.getMessage());
+            printServerError(e);
         }
     }
 
@@ -97,7 +101,7 @@ public class PostloginUI {
                 System.out.printf("%d. %s (Players: %s)%n", i + 1, g.name(), players);
             }
         } catch (Exception e) {
-            System.out.println("List games failed: " + e.getMessage());
+            printServerError(e);
         }
     }
 
@@ -109,7 +113,15 @@ public class PostloginUI {
 
         try {
             System.out.print("Enter game number to join: ");
-            int number = Integer.parseInt(scanner.nextLine());
+            String input = scanner.nextLine().trim();
+            int number;
+            try {
+                number = Integer.parseInt(input);
+            } catch (NumberFormatException nfe) {
+                System.out.println("Invalid input: please enter an integer");
+                return;
+            }
+
             if (number < 1 || number > lastGames.size()) {
                 System.out.println("Invalid game number.");
                 return;
@@ -131,7 +143,7 @@ public class PostloginUI {
             ChessBoardPrinter.drawBoard(gameData.game(), color);
 
         } catch (Exception e) {
-            System.out.println("Play game failed: " + e.getMessage());
+            printServerError(e);
         }
     }
 
@@ -143,7 +155,15 @@ public class PostloginUI {
 
         try {
             System.out.print("Enter game number to observe: ");
-            int number = Integer.parseInt(scanner.nextLine());
+            String input = scanner.nextLine().trim();
+            int number;
+            try {
+                number = Integer.parseInt(input);
+            } catch (NumberFormatException nfe) {
+                System.out.println("Invalid input: please enter an integer");
+                return;
+            }
+
             if (number < 1 || number > lastGames.size()) {
                 System.out.println("Invalid game number.");
                 return;
@@ -156,7 +176,23 @@ public class PostloginUI {
             ChessBoardPrinter.drawBoard(gameData.game(), "white");
 
         } catch (Exception e) {
-            System.out.println("Observe game failed: " + e.getMessage());
+            printServerError(e);
+        }
+    }
+
+    // Helper to print only the server message, e.g., "Error: already taken"
+    private void printServerError(Exception e) {
+        String msg = e.getMessage();
+        if (msg != null && msg.contains("\"message\"")) {
+            int start = msg.indexOf(":\"") + 2;
+            int end = msg.lastIndexOf("\"");
+            if (start >= 0 && end > start) {
+                System.out.println(msg.substring(start, end));
+            } else {
+                System.out.println("Unknown error");
+            }
+        } else {
+            System.out.println("Unknown error");
         }
     }
 }

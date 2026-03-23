@@ -50,6 +50,11 @@ public class PreloginUI {
             System.out.print("Password: ");
             String password = scanner.nextLine().trim();
 
+            if (username.isEmpty() || password.isEmpty()) {
+                System.out.println("Error: username and password cannot be empty");
+                return;
+            }
+
             facade.login(username, password);
             System.out.println("Login successful!");
 
@@ -57,7 +62,7 @@ public class PreloginUI {
             postlogin.start();
 
         } catch (Exception e) {
-            System.out.println("Login failed: " + e.getMessage());
+            printServerMessage(e);
         }
     }
 
@@ -70,6 +75,11 @@ public class PreloginUI {
             System.out.print("Email: ");
             String email = scanner.nextLine().trim();
 
+            if (username.isEmpty() || password.isEmpty() || email.isEmpty()) {
+                System.out.println("Error: username, password, and email cannot be empty");
+                return;
+            }
+
             facade.register(username, password, email);
             System.out.println("Registration successful! You are now logged in.");
 
@@ -77,7 +87,22 @@ public class PreloginUI {
             postlogin.start();
 
         } catch (Exception e) {
-            System.out.println("Registration failed: " + e.getMessage());
+            printServerMessage(e);
+        }
+    }
+
+    private void printServerMessage(Exception e) {
+        String msg = e.getMessage();
+        if (msg != null && msg.contains("\"message\"")) {
+            int start = msg.indexOf(":\"") + 2;
+            int end = msg.lastIndexOf("\"");
+            if (start >= 0 && end > start) {
+                System.out.println(msg.substring(start, end));
+            } else {
+                System.out.println("Unknown error");
+            }
+        } else {
+            System.out.println("Unknown error");
         }
     }
 }
