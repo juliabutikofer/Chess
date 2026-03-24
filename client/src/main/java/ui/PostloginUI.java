@@ -11,7 +11,7 @@ public class PostloginUI {
 
     private final ServerFacade facade;
     private final Scanner scanner;
-    private List<GameData> lastGames; // stores last game list for selection
+    private List<GameData> lastGames;
 
     public PostloginUI(ServerFacade facade, Scanner scanner) {
         this.facade = facade;
@@ -180,7 +180,7 @@ public class PostloginUI {
         }
     }
 
-    // Helper to print only the server message, e.g., "Error: already taken"
+    // print only the server message 'Error: already taken'
     private void printServerError(Exception e) {
         String msg = e.getMessage();
         if (msg != null && msg.contains("\"message\"")) {
