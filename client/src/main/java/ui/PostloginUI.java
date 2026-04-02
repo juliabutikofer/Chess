@@ -2,7 +2,9 @@ package ui;
 
 import client.ServerFacade;
 import client.dtos.GameData;
-import client.ChessBoardPrinter;
+import ChessBoardPrinter.ChessBoardPrinter;
+import websocket.WebSocketClient;
+import websocket.commands.UserGameCommand;
 
 import java.util.List;
 import java.util.Scanner;
@@ -12,6 +14,8 @@ public class PostloginUI {
     private final ServerFacade facade;
     private final Scanner scanner;
     private List<GameData> lastGames;
+
+    private WebSocketClient wsClient;
 
     public PostloginUI(ServerFacade facade, Scanner scanner) {
         this.facade = facade;
@@ -113,14 +117,7 @@ public class PostloginUI {
 
         try {
             System.out.print("Enter game number to join: ");
-            String input = scanner.nextLine().trim();
-            int number;
-            try {
-                number = Integer.parseInt(input);
-            } catch (NumberFormatException nfe) {
-                System.out.println("Invalid input: please enter an integer");
-                return;
-            }
+            int number = Integer.parseInt(scanner.nextLine().trim());
 
             if (number < 1 || number > lastGames.size()) {
                 System.out.println("Invalid game number.");
@@ -139,9 +136,20 @@ public class PostloginUI {
             facade.joinGame(gameData.id(), color);
             System.out.println("Joined game '" + gameData.name() + "' as " + color + "!");
 
-            // Print board from perspective
+            wsClient = new WebSocketClient(
+                    "ws://localhost:8080/game",
+                    new UserGameCommand(UserGameCommand.CommandType.CONNECT, facade.getAuthToken(), gameData.id()),
+                    gameData.game(),
+                    color
+            );
+
+            wsClient.setGame(gameData.game(), color);
+
+            System.out.println("Connected to game via WebSocket. Waiting for updates...");
             ChessBoardPrinter.drawBoard(gameData.game(), color);
 
+        } catch (NumberFormatException nfe) {
+            System.out.println("Invalid input: please enter an integer");
         } catch (Exception e) {
             printServerError(e);
         }
@@ -155,14 +163,7 @@ public class PostloginUI {
 
         try {
             System.out.print("Enter game number to observe: ");
-            String input = scanner.nextLine().trim();
-            int number;
-            try {
-                number = Integer.parseInt(input);
-            } catch (NumberFormatException nfe) {
-                System.out.println("Invalid input: please enter an integer");
-                return;
-            }
+            int number = Integer.parseInt(scanner.nextLine().trim());
 
             if (number < 1 || number > lastGames.size()) {
                 System.out.println("Invalid game number.");
@@ -173,14 +174,24 @@ public class PostloginUI {
 
             System.out.println("Observing game '" + gameData.name() + "' (white perspective):");
 
+            wsClient = new WebSocketClient(
+                    "ws://localhost:8080/game",
+                    new UserGameCommand(UserGameCommand.CommandType.CONNECT, facade.getAuthToken(), gameData.id()),
+                    gameData.game(),
+                    "white"
+            );
+
+            wsClient.setGame(gameData.game(), "observe");
+
             ChessBoardPrinter.drawBoard(gameData.game(), "white");
 
+        } catch (NumberFormatException nfe) {
+            System.out.println("Invalid input: please enter an integer");
         } catch (Exception e) {
             printServerError(e);
         }
     }
 
-    // print only the server message 'Error: already taken'
     private void printServerError(Exception e) {
         String msg = e.getMessage();
         if (msg != null && msg.contains("\"message\"")) {
