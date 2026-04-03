@@ -16,6 +16,7 @@ public class PostloginUI {
     private List<GameData> lastGames;
 
     private WebSocketClient wsClient;
+    private Integer currentGameID;
 
     public PostloginUI(ServerFacade facade, Scanner scanner) {
         this.facade = facade;
@@ -37,6 +38,7 @@ public class PostloginUI {
                 case "create game" -> createGame();
                 case "list games" -> listGames();
                 case "play game" -> playGame();
+                case "make move" -> makeMove();
                 case "observe game" -> observeGame();
                 case "reset" -> {
                     resetDatabase();
@@ -63,6 +65,7 @@ public class PostloginUI {
         System.out.println("  create game  - create a new game");
         System.out.println("  list games   - list all existing games");
         System.out.println("  play game    - join a game to play");
+        System.out.println("  make move    - make a move (e.g., e2e4)");
         System.out.println("  observe game - observe a game (white perspective)");
         System.out.println("  reset        - reset all games");
     }
@@ -125,6 +128,7 @@ public class PostloginUI {
             }
 
             GameData gameData = lastGames.get(number - 1);
+            currentGameID = gameData.id();
 
             System.out.print("Enter color (white/black): ");
             String color = scanner.nextLine().trim().toLowerCase();
@@ -171,6 +175,7 @@ public class PostloginUI {
             }
 
             GameData gameData = lastGames.get(number - 1);
+            currentGameID = gameData.id();
 
             System.out.println("Observing game '" + gameData.name() + "' (white perspective):");
 
@@ -205,5 +210,28 @@ public class PostloginUI {
         } else {
             System.out.println("Unknown error");
         }
+    }
+
+    private void makeMove() {
+        if (wsClient == null || currentGameID == null) {
+            System.out.println("You are not in a game.");
+            return;
+        }
+
+        System.out.print("Enter your move (e.g., e2e4): ");
+        String move = scanner.nextLine().trim();
+
+        // Basic validation
+        if (!move.matches("^[a-h][1-8][a-h][1-8]$")) {
+            System.out.println("Invalid move format. Example: e2e4");
+            return;
+        }
+
+        wsClient.sendCommand(new UserGameCommand(
+                UserGameCommand.CommandType.MAKE_MOVE,
+                facade.getAuthToken(),
+                currentGameID,
+                move
+        ));
     }
 }
