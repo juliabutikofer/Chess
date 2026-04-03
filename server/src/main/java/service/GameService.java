@@ -1,10 +1,11 @@
 package service;
 
+import chess.*;
 import dto.*;
 import dataaccess.*;
 import model.AuthData;
 import model.GameData;
-import chess.ChessGame;
+
 import java.util.Collection;
 
 public class GameService {
@@ -119,5 +120,63 @@ public class GameService {
         }
 
         games.updateGame(game);
+    }
+
+    public void makeMove(MakeMoveRequest req, String authToken) throws DataAccessException {
+        AuthData auth = auths.getAuth(authToken);
+        if (auth == null) throw new DataAccessException("unauthorized");
+
+        GameData gameData = games.getGame(req.gameID());
+        if (gameData == null) throw new DataAccessException("bad request");
+
+        ChessGame chess = gameData.game();
+
+        String moveStr = req.move();
+        if (moveStr == null || moveStr.length() < 4) {
+            throw new DataAccessException("invalid move string");
+        }
+
+        // Convert string to ChessPosition
+        ChessPosition from = ChessPosition.fromString(moveStr.substring(0, 2));
+        ChessPosition to = ChessPosition.fromString(moveStr.substring(2, 4));
+
+        ChessPiece.PieceType promotion = req.promotion(); // may be null
+        ChessMove move = new ChessMove(from, to, promotion);
+
+        try {
+            chess.makeMove(move);
+        } catch (InvalidMoveException e) {
+            throw new DataAccessException("invalid move");
+        }
+
+        games.updateGame(gameData);
+    }
+
+    public ChessGame getGame(int gameId) throws DataAccessException {
+        GameData data = games.getGame(gameId);
+        if (data == null) throw new DataAccessException("Game not found");
+        return data.game();
+    }
+
+    public ChessGame makeMove(int gameId, String move, String authToken) throws DataAccessException {
+        MakeMoveRequest req = new MakeMoveRequest(gameId, move, null); // null promotion
+        makeMove(req, authToken);
+        return getGame(gameId);
+    }
+
+    public ChessGame resignGame(int gameId, String authToken) throws DataAccessException {
+        GameData gameData = games.getGame(gameId);
+        if (gameData == null) throw new DataAccessException("bad request");
+
+        AuthData auth = auths.getAuth(authToken);
+        if (auth == null) throw new DataAccessException("unauthorized");
+
+        String username = auth.username();
+
+        ChessGame chess = gameData.game();
+        chess.resign(username);
+
+        games.updateGame(gameData);
+        return chess;
     }
 }
