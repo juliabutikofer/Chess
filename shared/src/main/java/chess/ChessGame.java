@@ -14,6 +14,9 @@ public class ChessGame {
     private ChessBoard board;
     private TeamColor teamTurn;
 
+    private boolean isOver = false;
+    private String resignedBy = null;
+
     public ChessGame() {
         board = new ChessBoard();
         board.resetBoard();
@@ -23,6 +26,19 @@ public class ChessGame {
     public ChessGame(ChessBoard other) {
         board = new ChessBoard(other);
         teamTurn = TeamColor.WHITE;
+    }
+
+    public void resign(String username) {
+        this.isOver = true;
+        this.resignedBy = username;
+    }
+
+    public boolean isOver() {
+        return isOver;
+    }
+
+    public String getResignedBy() {
+        return resignedBy;
     }
 
     /**

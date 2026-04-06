@@ -52,5 +52,17 @@ public class ChessPosition {
     public int hashCode() {
         return Objects.hash(row, col);
     }
+
+    public static ChessPosition fromString(String pos) {
+        if (pos == null || pos.length() != 2) {
+            throw new IllegalArgumentException("Invalid position string: " + pos);
+        }
+        int col = pos.charAt(0) - 'a' + 1;
+        int row = Character.getNumericValue(pos.charAt(1));
+        if (row < 1 || row > 8 || col < 1 || col > 8) {
+            throw new IllegalArgumentException("Position out of bounds: " + pos);
+        }
+        return new ChessPosition(row, col);
+    }
 }
 
