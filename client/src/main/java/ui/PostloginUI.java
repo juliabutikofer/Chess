@@ -155,34 +155,13 @@ public class PostloginUI {
                     color
             );
 
-            wsClient.setGame(gameData.game(), color);
+            wsClient.getConnectedFuture().join();
 
-            wsClient.setBoardUpdateListener(new WebSocketClient.BoardUpdateListener() {
-                @Override
-                public void onBoardUpdate(ChessGame updatedGame) {
-                    ChessBoardPrinter.drawBoard(updatedGame, color);
-                }
-
-                @Override
-                public void onNotification(String message) {
-                    System.out.println("[WS] " + message);
-                }
-
-                @Override
-                public void onError(String errorMessage) {
-                    System.out.println("[WS ERROR] " + errorMessage);
-                }
-            });
-
-            wsClient.getConnectedFuture().thenRun(() -> {
-                System.out.println("Connected to game via WebSocket!");
-
-                GamePlayUI gameplay = new GamePlayUI(wsClient, gameData.game(), color);
-                gameplay.start();
-            });
+            GamePlayUI gameplay = new GamePlayUI(wsClient, gameData.game(), color);
+            gameplay.start();
 
         } catch (Exception e) {
-            System.out.println("[WS ERROR] " + e.getMessage());
+            System.out.println("Error: " + e.getMessage());
         }
     }
 
@@ -216,12 +195,12 @@ public class PostloginUI {
             wsClient.setBoardUpdateListener(new WebSocketClient.BoardUpdateListener() {
                 @Override
                 public void onBoardUpdate(ChessGame updatedGame) {
-                    ChessBoardPrinter.drawBoard(updatedGame, "white");
+                    //ChessBoardPrinter.drawBoard(updatedGame, "white");
                 }
 
                 @Override
                 public void onNotification(String message) {
-                    System.out.println("[WS] " + message);
+                    //System.out.println("[WS] " + message);
                 }
 
                 @Override

@@ -78,8 +78,8 @@ public class GameService {
         } catch (InvalidMoveException e) {
             throw new DataAccessException("Error: invalid move");
         }
-
-        games.updateGame(gameData);
+        GameData updatedData = new GameData(gameData.gameID(), gameData.whiteUsername(), gameData.blackUsername(), gameData.gameName(), chess);
+        games.updateGame(updatedData);
         return chess;
     }
 

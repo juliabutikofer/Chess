@@ -42,6 +42,9 @@ public class Server {
 
             config.jetty.modifyWebSocketServletFactory(factory -> {
                 factory.setIdleTimeout(Duration.ofMinutes(15));
+
+                factory.setMaxTextMessageSize(1024 * 1024);   // 1MB
+                factory.setMaxBinaryMessageSize(1024 * 1024); // 1MB
             });
         });
 
@@ -55,17 +58,27 @@ public class Server {
         javalin.put("/game", this::joinGame);
         javalin.put("/game/observe", this::observeGame);
 
-        // WebSocket endpoint
         javalin.ws("/ws", ws -> {
             ws.onConnect(ctx -> System.out.println("[WS] Connected: " + ctx.sessionId()));
             ws.onClose(ctx -> wsHandler.removeClient(ctx));
             ws.onError(ctx -> System.out.println("[WS ERROR] " + ctx.error()));
             ws.onMessage(ctx -> {
                 try {
-                    UserGameCommand cmd = gson.fromJson(ctx.message(), UserGameCommand.class);
-                    wsHandler.handleCommand(cmd, ctx);
+                    String message = ctx.message();
+                    System.out.println("[WS SERVER] Received raw message: " + message);
+
+                    // Use the shared Gson to parse the command
+                    UserGameCommand cmd = gson.fromJson(message, UserGameCommand.class);
+
+                    if (cmd != null) {
+                        System.out.println("[WS SERVER] Parsing successful. Type: " + cmd.getCommandType());
+                        wsHandler.handleCommand(cmd, ctx);
+                    } else {
+                        System.out.println("[WS SERVER] Error: Parsed command is null");
+                    }
                 } catch (Exception e) {
-                    System.out.println("[WS ERROR] " + e.getMessage());
+                    System.out.println("[WS SERVER ERROR] Fail during message handling: " + e.getMessage());
+                    e.printStackTrace();
                 }
             });
         });
