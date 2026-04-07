@@ -58,11 +58,6 @@ public class GamePlayUI {
     public void start() {
         System.out.println("Gameplay started! Type 'help' for commands.");
 
-        Integer gameId = wsClient.getGameID();
-        if (gameId != null) {
-            wsClient.joinGame(gameId);
-        }
-
         if (this.game == null && wsClient.getGame() != null) {
             this.game = wsClient.getGame();
         }
@@ -128,12 +123,12 @@ public class GamePlayUI {
         System.out.print("Are you sure you want to resign? (yes/no): ");
         if (scanner.nextLine().trim().equalsIgnoreCase("yes")) {
             System.out.println("You resigned.");
-            running = false;
             wsClient.sendCommand(new UserGameCommand(
                     UserGameCommand.CommandType.RESIGN,
                     wsClient.getConnectToken(),
                     wsClient.getGameID()
             ));
+            // stay in gameplay UI, but you may want to block further moves locally
         } else {
             System.out.println("Resign cancelled.");
             System.out.print("gameplay> ");

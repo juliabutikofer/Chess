@@ -3,6 +3,7 @@ package websockethandler;
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
 import model.AuthData;
+import model.GameData;
 import websocket.commands.UserGameCommand;
 import websocket.messages.ServerMessage;
 import chess.*;
@@ -46,36 +47,44 @@ public class WebSocketHandler {
                 throw new DataAccessException("unauthorized");
             }
 
-            ChessGame game = gameService.getGame(gameId);
-            if (game == null) {
+            // You already have this method — it returns GameData
+            GameData gameData = gameService.getGame(gameId);
+            if (gameData == null) {
                 throw new DataAccessException("game not found");
             }
 
+            ChessGame game = gameData.game();
+
+            // Add this WebSocket connection to the game's client set
             gameClients.computeIfAbsent(gameId, k -> ConcurrentHashMap.newKeySet()).add(ctx);
 
-            ServerMessage loadMsg = new ServerMessage(ServerMessage.ServerMessageType.LOAD_GAME, game);
-            String json = gson.toJson(loadMsg);
+            // Send LOAD_GAME to the connecting client
+            ctx.send(gson.toJson(new ServerMessage(ServerMessage.ServerMessageType.LOAD_GAME, game)));
 
-            if (ctx.session.isOpen()) {
-                ctx.send(json);
-                System.out.println("[HANDLER SUCCESS] LOAD_GAME sent. JSON Length: " + json.length());
+            // Determine role using GameData fields
+            String username = auth.username();
+            String roleMsg;
+
+            if (gameData.whiteUsername() != null && gameData.whiteUsername().equals(username)) {
+                roleMsg = username + " joined as white";
+            } else if (gameData.blackUsername() != null && gameData.blackUsername().equals(username)) {
+                roleMsg = username + " joined as black";
+            } else {
+                roleMsg = username + " joined as observer";
             }
 
+            // Notify all OTHER clients
             broadcastToOthers(
                     gameId,
                     ctx.sessionId(),
-                    new ServerMessage(
-                            ServerMessage.ServerMessageType.NOTIFICATION,
-                            auth.username() + " joined",
-                            false
-                    )
+                    new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION, roleMsg, false)
             );
+
         } catch (Exception e) {
-            System.out.println("[HANDLER CRITICAL] " + e.getMessage());
-            e.printStackTrace();
             sendError(ctx, e.getMessage());
         }
     }
+
 
     private void handleMove(UserGameCommand cmd, WsContext ctx) {
         try {

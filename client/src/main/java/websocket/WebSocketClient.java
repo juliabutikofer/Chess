@@ -95,6 +95,11 @@ public class WebSocketClient {
         @Override
         public void onOpen(WebSocket webSocket) {
             connected.complete(null);
+
+            // Send the initial CONNECT command
+            String json = gson.toJson(connectCommand);
+            webSocket.sendText(json, true);
+
             webSocket.request(1);
         }
 

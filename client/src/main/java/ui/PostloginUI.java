@@ -180,42 +180,24 @@ public class PostloginUI {
 
             GameData gameData = lastGames.get(number - 1);
             currentGameID = gameData.id();
-            currentPerspective = "observe";
 
+            // Create WebSocket client
             wsClient = new WebSocketClient(
                     getWsUrl(),
                     new UserGameCommand(UserGameCommand.CommandType.CONNECT, facade.getAuthToken(), gameData.id()),
                     gameData.game(),
-                    "white"
+                    "observe"
             );
 
-            wsClient.setGame(gameData.game(), "observe");
-
-            wsClient.setBoardUpdateListener(new WebSocketClient.BoardUpdateListener() {
-                @Override
-                public void onBoardUpdate(ChessGame updatedGame) {
-                    //ChessBoardPrinter.drawBoard(updatedGame, "white");
-                }
-
-                @Override
-                public void onNotification(String message) {
-                    //System.out.println("[WS] " + message);
-                }
-
-                @Override
-                public void onError(String errorMessage) {
-                    System.out.println("[WS ERROR] " + errorMessage);
-                }
-            });
-
-            wsClient.getConnectedFuture().thenRun(() ->
-                    System.out.println("Connected to observe game via WebSocket.")
-            );
+            // Launch GamePlayUI in observer mode
+            GamePlayUI ui = new GamePlayUI(wsClient, gameData.game(), "white");
+            ui.start();
 
         } catch (Exception e) {
             System.out.println("[WS ERROR] " + e.getMessage());
         }
     }
+
 
     private void printServerError(Exception e) {
         System.out.println("Server error: " + e.getMessage());

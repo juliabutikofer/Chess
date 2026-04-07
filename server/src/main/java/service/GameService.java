@@ -181,7 +181,9 @@ public class GameService {
         return auths.getAuth(token);
     }
 
-    public ChessGame getGame(int id) throws DataAccessException {
-        return games.getGame(id).game();
+    public GameData getGame(int id) throws DataAccessException {
+        return games.getGame(id);
     }
+
+
 }
