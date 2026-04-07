@@ -108,7 +108,9 @@ public class Server {
 
     private String requireAuthToken(Context ctx) throws DataAccessException {
         String token = ctx.header("authorization");
-        if (token == null) throw new DataAccessException("unauthorized");
+        if (token == null) {
+            throw new DataAccessException("unauthorized");
+        }
         return token;
     }
 

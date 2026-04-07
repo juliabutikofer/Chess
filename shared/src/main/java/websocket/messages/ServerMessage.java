@@ -37,8 +37,11 @@ public class ServerMessage {
 
     public ServerMessage(ServerMessageType type, String text, boolean isError) {
         this.serverMessageType = type;
-        if (isError) this.errorMessage = text;
-        else this.message = text;
+        if (isError) {
+            this.errorMessage = text;
+        } else {
+            this.message = text;
+        }
     }
 
     public ServerMessageType getServerMessageType() {
@@ -51,8 +54,12 @@ public class ServerMessage {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ServerMessage that)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof ServerMessage that)) {
+            return false;
+        }
         return serverMessageType == that.serverMessageType;
     }
 

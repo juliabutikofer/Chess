@@ -33,10 +33,17 @@ public class ChessBoardPrinter {
                 String firstSquare = arr[0][0] != null
                         ? arr[0][0].getPieceType().toString()
                         : "null";
-                // debug removed
             }
         } catch (Exception ignore) {
-            // ignore
+        }
+
+        // ⭐ Pull squares[] out of the inner loop
+        ChessPiece[][] squares = null;
+        try {
+            var f = ChessBoard.class.getDeclaredField("squares");
+            f.setAccessible(true);
+            squares = (ChessPiece[][]) f.get(board);
+        } catch (Exception ignore) {
         }
 
         for (int i = 0; i < 8; i++) {
@@ -48,24 +55,19 @@ public class ChessBoardPrinter {
 
                 ChessPiece piece = null;
 
-                // Reflection block flattened
-                try {
-                    var f = ChessBoard.class.getDeclaredField("squares");
-                    f.setAccessible(true);
-                    ChessPiece[][] arr = (ChessPiece[][]) f.get(board);
+                if (squares != null) {
+                    int rIndex = row - 1;
+                    int cIndex = col - 1;
 
-                    if (arr != null) {
-                        int rIndex = row - 1;
-                        int cIndex = col - 1;
+                    boolean validRow = rIndex >= 0 && rIndex < squares.length;
+                    boolean validCol = validRow && cIndex >= 0 && cIndex < squares[rIndex].length;
 
-                        boolean validRow = rIndex >= 0 && rIndex < arr.length;
-                        boolean validCol = validRow && cIndex >= 0 && cIndex < arr[rIndex].length;
-
-                        if (validCol) {
-                            piece = arr[rIndex][cIndex];
-                        }
+                    if (validCol) {
+                        piece = squares[rIndex][cIndex];
                     }
-                } catch (Exception e) {
+                }
+
+                if (piece == null) {
                     piece = board.getPiece(new ChessPosition(row, col));
                 }
 
@@ -79,8 +81,6 @@ public class ChessBoardPrinter {
         printFiles(out, whitePerspective);
         out.flush();
     }
-
-
 
     private static void printFiles(PrintStream out, boolean whitePerspective) {
         out.print("  ");

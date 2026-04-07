@@ -97,7 +97,10 @@ public class ChessBoard {
     }
 
     public void rebuild() {
-        if (squares == null) return;
+        if (squares == null) {
+            return;
+        }
+
         for (int r = 0; r < squares.length; r++) {
             for (int c = 0; c < squares[r].length; c++) {
                 ChessPiece piece = squares[r][c];

@@ -71,7 +71,10 @@ public class GamePlayUI {
     }
 
     private void drawBoard() {
-        if (game == null) return;
+        if (game == null) {
+            return;
+        }
+
         System.out.println();
         ChessBoardPrinter.drawBoard(game, perspective);
     }
@@ -171,7 +174,9 @@ public class GamePlayUI {
                 System.out.println("No piece at that position.");
             } else {
                 System.out.println(piece.getPieceType() + " at " + pos + " legal moves:");
-                for (ChessMove move : game.validMoves(pos)) System.out.println(move);
+                for (ChessMove move : game.validMoves(pos)) {
+                    System.out.println(move);
+                }
             }
         } catch (Exception e) {
             System.out.println("Invalid position.");

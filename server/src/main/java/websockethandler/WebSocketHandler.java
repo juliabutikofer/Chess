@@ -23,7 +23,9 @@ public class WebSocketHandler {
     }
 
     public void handleCommand(UserGameCommand cmd, WsContext ctx) {
-        if (cmd == null || cmd.getCommandType() == null) return;
+        if (cmd == null || cmd.getCommandType() == null) {
+            return;
+        }
         System.out.println("[HANDLER] Processing: " + cmd.getCommandType());
 
         switch (cmd.getCommandType()) {
@@ -40,10 +42,14 @@ public class WebSocketHandler {
 
         try {
             AuthData auth = gameService.getAuth(authToken);
-            if (auth == null) throw new DataAccessException("unauthorized");
+            if (auth == null) {
+                throw new DataAccessException("unauthorized");
+            }
 
             ChessGame game = gameService.getGame(gameId);
-            if (game == null) throw new DataAccessException("game not found");
+            if (game == null) {
+                throw new DataAccessException("game not found");
+            }
 
             gameClients.computeIfAbsent(gameId, k -> ConcurrentHashMap.newKeySet()).add(ctx);
 
