@@ -55,7 +55,15 @@ public class WebSocketHandler {
                 System.out.println("[HANDLER SUCCESS] LOAD_GAME sent. JSON Length: " + json.length());
             }
 
-            broadcastToOthers(gameId, ctx.sessionId(), new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION, auth.username() + " joined", false));
+            broadcastToOthers(
+                    gameId,
+                    ctx.sessionId(),
+                    new ServerMessage(
+                            ServerMessage.ServerMessageType.NOTIFICATION,
+                            auth.username() + " joined",
+                            false
+                    )
+            );
         } catch (Exception e) {
             System.out.println("[HANDLER CRITICAL] " + e.getMessage());
             e.printStackTrace();
@@ -133,54 +141,74 @@ public class WebSocketHandler {
 
     private void broadcastToGame(int gameId, ServerMessage msg) {
         Set<WsContext> clients = gameClients.get(gameId);
-        if (clients != null) {
+        if (clients == null) {
+            return;
+        }
+
+        String json;
+        try {
+            json = gson.toJson(msg);
+        } catch (Exception e) {
+            System.out.println("[BROADCAST CRITICAL] Failed to serialize: " + e.getMessage());
+            return;
+        }
+
+        System.out.println("[BROADCAST] Sending to " + clients.size() + " clients. JSON size: " + json.length());
+
+        java.util.List<WsContext> clientsCopy = new java.util.ArrayList<>(clients);
+
+        for (WsContext client : clientsCopy) {
+            if (!client.session.isOpen()) {
+                clients.remove(client);
+                continue;
+            }
+
             try {
-                String json = gson.toJson(msg);
-                System.out.println("[BROADCAST] Sending to " + clients.size() + " clients. JSON size: " + json.length());
-
-                java.util.List<WsContext> clientsCopy = new java.util.ArrayList<>(clients);
-
-                for (WsContext client : clientsCopy) {
-                    try {
-                        if (client.session.isOpen()) {
-                            client.send(json);
-                        } else {
-                            clients.remove(client);
-                        }
-                    } catch (Exception e) {
-                        System.out.println("[BROADCAST ERROR] Failed to send to one client: " + e.getMessage());
-                        clients.remove(client);
-                    }
-                }
+                client.send(json);
             } catch (Exception e) {
-                System.out.println("[BROADCAST CRITICAL] Failed to serialize or loop: " + e.getMessage());
-                e.printStackTrace();
+                System.out.println("[BROADCAST ERROR] Failed to send: " + e.getMessage());
+                clients.remove(client);
             }
         }
     }
+
 
     private void broadcastToOthers(int gameId, String excludeId, ServerMessage msg) {
         Set<WsContext> clients = gameClients.get(gameId);
-        if (clients != null) {
-            try {
-                String json = gson.toJson(msg);
-                java.util.List<WsContext> clientsCopy = new java.util.ArrayList<>(clients);
+        if (clients == null) {
+            return;
+        }
 
-                for (WsContext client : clientsCopy) {
-                    if (client.session.isOpen() && !client.sessionId().equals(excludeId)) {
-                        try {
-                            client.send(json);
-                        } catch (Exception e) {
-                            System.out.println("[BROADCAST OTHERS ERROR] Individual send failed: " + e.getMessage());
-                            clients.remove(client);
-                        }
-                    }
+        String json;
+        try {
+            json = gson.toJson(msg);
+        } catch (Exception e) {
+            System.out.println("[BROADCAST OTHERS CRITICAL] " + e.getMessage());
+            return;
+        }
+
+        java.util.List<WsContext> clientsCopy = new java.util.ArrayList<>(clients);
+
+        for (WsContext client : clientsCopy) {
+            boolean open = client.session.isOpen();
+            boolean notExcluded = !client.sessionId().equals(excludeId);
+
+            if (!open || !notExcluded) {
+                if (!open) {
+                    clients.remove(client);
                 }
+                continue;
+            }
+
+            try {
+                client.send(json);
             } catch (Exception e) {
-                System.out.println("[BROADCAST OTHERS CRITICAL] " + e.getMessage());
+                System.out.println("[BROADCAST OTHERS ERROR] " + e.getMessage());
+                clients.remove(client);
             }
         }
     }
+
 
     public void removeClient(WsContext ctx) {
         gameClients.values().forEach(v -> v.remove(ctx));

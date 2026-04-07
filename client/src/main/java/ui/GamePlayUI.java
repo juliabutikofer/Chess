@@ -3,7 +3,7 @@ package ui;
 import chess.*;
 import websocket.WebSocketClient;
 import websocket.commands.UserGameCommand;
-import ChessBoardPrinter.ChessBoardPrinter;
+import chessboardprinter.ChessBoardPrinter;
 
 import java.util.Scanner;
 
@@ -25,7 +25,7 @@ public class GamePlayUI {
         wsClient.setBoardUpdateListener(new WebSocketClient.BoardUpdateListener() {
             @Override
             public void onBoardUpdate(ChessGame updatedGame) {
-                lastMoveSucceeded = true;   // ← mark success
+                lastMoveSucceeded = true;
 
                 GamePlayUI.this.game = updatedGame;
                 drawBoard();
@@ -49,7 +49,6 @@ public class GamePlayUI {
             public void onError(String errorMessage) {
                 lastMoveSucceeded = false;
                 System.out.println("\n" + errorMessage);
-//                System.out.print("gameplay> ");
             }
 
 
@@ -61,17 +60,12 @@ public class GamePlayUI {
 
         Integer gameId = wsClient.getGameID();
         if (gameId != null) {
-//            System.out.println("[DEBUG] joining game: " + gameId);
             wsClient.joinGame(gameId);
         }
 
         if (this.game == null && wsClient.getGame() != null) {
             this.game = wsClient.getGame();
         }
-
-//        if (this.game != null) {
-//            drawBoard();
-//        }
 
         promptLoop();
     }
@@ -80,7 +74,6 @@ public class GamePlayUI {
         if (game == null) return;
         System.out.println();
         ChessBoardPrinter.drawBoard(game, perspective);
-//        System.out.print("gameplay> ");
     }
 
     private void promptLoop() {
@@ -158,7 +151,6 @@ public class GamePlayUI {
                 ChessPosition to = ChessPosition.fromString(moveStr.substring(2, 4));
 
                 wsClient.sendMove(new ChessMove(from, to, null));
-//                System.out.println("Move sent. Waiting for server...");
 
                 Thread.sleep(150);
 

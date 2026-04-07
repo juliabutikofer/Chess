@@ -62,20 +62,28 @@ public class Server {
             ws.onConnect(ctx -> System.out.println("[WS] Connected: " + ctx.sessionId()));
             ws.onClose(ctx -> wsHandler.removeClient(ctx));
             ws.onError(ctx -> System.out.println("[WS ERROR] " + ctx.error()));
+
             ws.onMessage(ctx -> {
+                String message = ctx.message();
+                System.out.println("[WS SERVER] Received raw message: " + message);
+
+                UserGameCommand cmd;
                 try {
-                    String message = ctx.message();
-                    System.out.println("[WS SERVER] Received raw message: " + message);
+                    cmd = gson.fromJson(message, UserGameCommand.class);
+                } catch (Exception e) {
+                    System.out.println("[WS SERVER ERROR] JSON parse failed: " + e.getMessage());
+                    return;
+                }
 
-                    // Use the shared Gson to parse the command
-                    UserGameCommand cmd = gson.fromJson(message, UserGameCommand.class);
+                if (cmd == null) {
+                    System.out.println("[WS SERVER] Error: Parsed command is null");
+                    return;
+                }
 
-                    if (cmd != null) {
-                        System.out.println("[WS SERVER] Parsing successful. Type: " + cmd.getCommandType());
-                        wsHandler.handleCommand(cmd, ctx);
-                    } else {
-                        System.out.println("[WS SERVER] Error: Parsed command is null");
-                    }
+                System.out.println("[WS SERVER] Parsing successful. Type: " + cmd.getCommandType());
+
+                try {
+                    wsHandler.handleCommand(cmd, ctx);
                 } catch (Exception e) {
                     System.out.println("[WS SERVER ERROR] Fail during message handling: " + e.getMessage());
                     e.printStackTrace();

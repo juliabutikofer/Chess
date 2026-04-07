@@ -1,4 +1,4 @@
-package ChessBoardPrinter;
+package chessboardprinter;
 
 import chess.*;
 import java.io.PrintStream;
@@ -24,15 +24,19 @@ public class ChessBoardPrinter {
 
         printFiles(out, whitePerspective);
 
+        // Reflection debug (flattened)
         try {
             var f = ChessBoard.class.getDeclaredField("squares");
             f.setAccessible(true);
             ChessPiece[][] arr = (ChessPiece[][]) f.get(board);
-            String firstSquare = (arr != null && arr[0][0] != null)
-                    ? arr[0][0].getPieceType().toString()
-                    : "null";
-            // out.println("[PRINTER DEBUG] squares[0][0] = " + firstSquare);
+            if (arr != null && arr.length > 0 && arr[0].length > 0) {
+                String firstSquare = arr[0][0] != null
+                        ? arr[0][0].getPieceType().toString()
+                        : "null";
+                // debug removed
+            }
         } catch (Exception ignore) {
+            // ignore
         }
 
         for (int i = 0; i < 8; i++) {
@@ -42,34 +46,40 @@ public class ChessBoardPrinter {
             for (int j = 0; j < 8; j++) {
                 int col = whitePerspective ? j + 1 : 8 - j;
 
-                ChessPosition pos = new ChessPosition(row, col);
                 ChessPiece piece = null;
 
+                // Reflection block flattened
                 try {
                     var f = ChessBoard.class.getDeclaredField("squares");
                     f.setAccessible(true);
                     ChessPiece[][] arr = (ChessPiece[][]) f.get(board);
+
                     if (arr != null) {
                         int rIndex = row - 1;
                         int cIndex = col - 1;
-                        if (rIndex >= 0 && rIndex < arr.length &&
-                                cIndex >= 0 && cIndex < arr[rIndex].length) {
+
+                        boolean validRow = rIndex >= 0 && rIndex < arr.length;
+                        boolean validCol = validRow && cIndex >= 0 && cIndex < arr[rIndex].length;
+
+                        if (validCol) {
                             piece = arr[rIndex][cIndex];
                         }
                     }
                 } catch (Exception e) {
-                    piece = board.getPiece(pos);
+                    piece = board.getPiece(new ChessPosition(row, col));
                 }
 
                 boolean isWhiteSquare = (row + col) % 2 != 0;
                 printSquare(out, piece, isWhiteSquare);
             }
+
             out.println(" " + row);
         }
 
         printFiles(out, whitePerspective);
         out.flush();
     }
+
 
 
     private static void printFiles(PrintStream out, boolean whitePerspective) {

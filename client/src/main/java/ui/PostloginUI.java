@@ -2,7 +2,6 @@ package ui;
 
 import client.ServerFacade;
 import client.dtos.GameData;
-import ChessBoardPrinter.ChessBoardPrinter;
 import websocket.WebSocketClient;
 import websocket.commands.UserGameCommand;
 import chess.ChessGame;
