@@ -9,6 +9,7 @@ import service.GameService;
 import service.UserService;
 import service.ClearService;
 import com.google.gson.Gson;
+import typeadapter.JSONSerializer;
 import websockethandler.WebSocketHandler;
 import websocket.commands.UserGameCommand;
 
@@ -23,7 +24,7 @@ public class Server {
     private final GameService gameService;
     private final ClearService clearService;
     private final WebSocketHandler wsHandler;
-    private final Gson gson = new Gson();
+    private final Gson gson = JSONSerializer.getGson();
 
     public Server() {
         UserDAO userDAO = new SQLUserDAO();
@@ -188,7 +189,7 @@ public class Server {
     }
 
     private void handleDataAccessException(DataAccessException e, Context ctx) {
-        String msg = e.getMessage(); // Removed .toLowerCase() for a more precise check
+        String msg = e.getMessage();
 
         if (msg.contains("bad request")) {
             ctx.status(400).json(Map.of("message", "Error: bad request"));
