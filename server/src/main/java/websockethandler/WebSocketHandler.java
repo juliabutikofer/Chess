@@ -1,56 +1,32 @@
 package websockethandler;
 
 import com.google.gson.Gson;
+import dataaccess.DataAccessException;
+import model.AuthData;
 import websocket.commands.UserGameCommand;
 import websocket.messages.ServerMessage;
 import chess.ChessGame;
+import chess.ChessMove;
 import service.GameService;
-import io.javalin.Javalin;
 import io.javalin.websocket.WsContext;
 
-import java.util.Set;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class WebSocketHandler {
 
     private final GameService gameService;
     private final Gson gson = new Gson();
-
     private final Map<Integer, Set<WsContext>> gameClients = new ConcurrentHashMap<>();
 
-    public WebSocketHandler(Javalin app, GameService gameService) {
+    public WebSocketHandler(GameService gameService) {
         this.gameService = gameService;
-
-        app.ws("/game", ws -> {
-
-            ws.onConnect(ctx -> {
-                System.out.println("[WS] Client connected: " + ctx.sessionId());
-            });
-
-            ws.onClose(ctx -> {
-                removeClient(ctx);
-                System.out.println("[WS] Client disconnected: " + ctx.sessionId());
-            });
-
-            ws.onMessage(ctx -> {
-                try {
-                    UserGameCommand cmd = gson.fromJson(ctx.message(), UserGameCommand.class);
-                    handleCommand(cmd, ctx);
-                } catch (Exception e) {
-                    System.out.println("[WS] Failed to parse command: " + e.getMessage());
-                    try {
-                        ctx.send(gson.toJson(new ServerMessage(ServerMessage.ServerMessageType.ERROR, e.getMessage(), true)));
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
-                }
-            });
-
-        });
     }
 
-    private void handleCommand(UserGameCommand cmd, WsContext ctx) {
+    public void handleCommand(UserGameCommand cmd, WsContext ctx) {
+        if (cmd == null || cmd.getCommandType() == null) return;
+
         switch (cmd.getCommandType()) {
             case CONNECT -> handleConnect(cmd, ctx);
             case MAKE_MOVE -> handleMove(cmd, ctx);
@@ -61,69 +37,100 @@ public class WebSocketHandler {
 
     private void handleConnect(UserGameCommand cmd, WsContext ctx) {
         int gameId = cmd.getGameID();
-        gameClients.computeIfAbsent(gameId, k -> ConcurrentHashMap.newKeySet()).add(ctx);
+        String authToken = cmd.getAuthToken();
 
         try {
+            AuthData auth = gameService.getAuth(authToken);
+            if (auth == null) {
+                throw new DataAccessException("Error: unauthorized");
+            }
+
+            gameClients.computeIfAbsent(gameId, k -> ConcurrentHashMap.newKeySet()).add(ctx);
+
             ChessGame game = gameService.getGame(gameId);
+            if (game == null) throw new DataAccessException("Error: game not found");
 
-            ServerMessage loadGameMsg = new ServerMessage(ServerMessage.ServerMessageType.LOAD_GAME, game);
-            try {
-                ctx.send(gson.toJson(loadGameMsg));
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+            ctx.send(gson.toJson(new ServerMessage(ServerMessage.ServerMessageType.LOAD_GAME, game)));
 
-            System.out.println("[WS] Client " + ctx.sessionId() + " connected to game " + gameId);
+            String message = String.format("%s joined the game", auth.username());
+            broadcastToOthers(gameId, ctx.sessionId(), new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION, message, false));
+
         } catch (Exception e) {
-            try {
-                ctx.send(gson.toJson(new ServerMessage(ServerMessage.ServerMessageType.ERROR, e.getMessage(), true)));
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+            sendError(ctx, e.getMessage());
         }
     }
 
     private void handleMove(UserGameCommand cmd, WsContext ctx) {
         int gameId = cmd.getGameID();
-        String move = cmd.getMove();
+        ChessMove move = cmd.getMove();
+
+        if (move == null) {
+            sendError(ctx, "Error: Move data was missing or malformed.");
+            return;
+        }
 
         try {
-            ChessGame updatedGame = gameService.makeMove(gameId, move, cmd.getAuthToken());
-            ServerMessage loadGameMsg = new ServerMessage(ServerMessage.ServerMessageType.LOAD_GAME, updatedGame);
-            broadcastToGame(gameId, loadGameMsg);
+            AuthData auth = gameService.getAuth(cmd.getAuthToken());
+            if (auth == null) throw new DataAccessException("Error: unauthorized");
 
-            System.out.println("[WS] Move made in game " + gameId + ": " + move);
+            ChessGame updatedGame = gameService.makeMove(gameId, move, cmd.getAuthToken());
+
+            broadcastToGame(gameId, new ServerMessage(ServerMessage.ServerMessageType.LOAD_GAME, updatedGame));
+
+            String noteText = String.format("%s moved %s", auth.username(), move.toString());
+            broadcastToOthers(gameId, ctx.sessionId(), new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION, noteText, false));
+
+            checkGameState(gameId, updatedGame);
+
         } catch (Exception e) {
-            try {
-                ctx.send(gson.toJson(new ServerMessage(ServerMessage.ServerMessageType.ERROR, e.getMessage(), true)));
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+            sendError(ctx, e.getMessage());
+        }
+    }
+
+    private void handleResign(UserGameCommand cmd, WsContext ctx) {
+        try {
+            AuthData auth = gameService.getAuth(cmd.getAuthToken());
+            if (auth == null) throw new DataAccessException("Error: unauthorized");
+
+            gameService.resignGame(cmd.getGameID(), cmd.getAuthToken());
+
+            String message = String.format("%s has resigned. Game over.", auth.username());
+            broadcastToGame(cmd.getGameID(), new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION, message, false));
+        } catch (Exception e) {
+            sendError(ctx, e.getMessage());
         }
     }
 
     private void handleLeave(UserGameCommand cmd, WsContext ctx) {
-        int gameId = cmd.getGameID();
-        removeClient(ctx);
-        System.out.println("[WS] Client " + ctx.sessionId() + " left game " + gameId);
+        try {
+            int gameId = cmd.getGameID();
+            AuthData auth = gameService.getAuth(cmd.getAuthToken());
+
+            removeClient(ctx, gameId);
+
+            if (auth != null) {
+                String message = String.format("%s left the game", auth.username());
+                broadcastToOthers(gameId, ctx.sessionId(), new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION, message, false));
+            }
+        } catch (Exception e) {
+        }
     }
 
-    private void handleResign(UserGameCommand cmd, WsContext ctx) {
-        int gameId = cmd.getGameID();
-
-        try {
-            ChessGame updatedGame = gameService.resignGame(gameId, cmd.getAuthToken());
-            ServerMessage loadGameMsg = new ServerMessage(ServerMessage.ServerMessageType.LOAD_GAME, updatedGame);
-            broadcastToGame(gameId, loadGameMsg);
-
-            System.out.println("[WS] Player resigned in game " + gameId);
-        } catch (Exception e) {
-            try {
-                ctx.send(gson.toJson(new ServerMessage(ServerMessage.ServerMessageType.ERROR, e.getMessage(), true)));
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+    private void checkGameState(int gameId, ChessGame game) {
+        if (game.isInCheckmate(ChessGame.TeamColor.WHITE)) {
+            broadcastToGame(gameId, new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION, "White is in checkmate!", false));
+        } else if (game.isInCheckmate(ChessGame.TeamColor.BLACK)) {
+            broadcastToGame(gameId, new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION, "Black is in checkmate!", false));
+        } else if (game.isInCheck(ChessGame.TeamColor.WHITE)) {
+            broadcastToGame(gameId, new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION, "White is in check!", false));
+        } else if (game.isInCheck(ChessGame.TeamColor.BLACK)) {
+            broadcastToGame(gameId, new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION, "Black is in check!", false));
         }
+    }
+
+    private void sendError(WsContext ctx, String errorMessage) {
+        String msg = errorMessage.toLowerCase().contains("error") ? errorMessage : "Error: " + errorMessage;
+        ctx.send(gson.toJson(new ServerMessage(ServerMessage.ServerMessageType.ERROR, msg, true)));
     }
 
     private void broadcastToGame(int gameId, ServerMessage msg) {
@@ -133,14 +140,38 @@ public class WebSocketHandler {
             for (WsContext client : clients) {
                 try {
                     client.send(json);
-                } catch (Exception ex) {
-                    ex.printStackTrace();
+                } catch (Exception e) {
                 }
             }
         }
     }
 
-    private void removeClient(WsContext ctx) {
-        gameClients.values().forEach(set -> set.remove(ctx));
+    private void broadcastToOthers(int gameId, String excludeId, ServerMessage msg) {
+        Set<WsContext> clients = gameClients.get(gameId);
+        if (clients != null) {
+            String json = gson.toJson(msg);
+            for (WsContext client : clients) {
+                if (!client.sessionId().equals(excludeId)) {
+                    try {
+                        client.send(json);
+                    } catch (Exception e) {
+                        // Handled
+                    }
+                }
+            }
+        }
+    }
+
+    public void removeClient(WsContext ctx, int gameId) {
+        Set<WsContext> clients = gameClients.get(gameId);
+        if (clients != null) clients.remove(ctx);
+    }
+
+    public void removeClient(WsContext ctx) {
+        if (ctx == null) {
+            gameClients.clear();
+        } else {
+            gameClients.values().forEach(set -> set.remove(ctx));
+        }
     }
 }
