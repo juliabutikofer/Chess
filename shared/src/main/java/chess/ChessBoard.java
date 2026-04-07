@@ -94,9 +94,20 @@ public class ChessBoard {
         addPiece(new ChessPosition(8, 6), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.BISHOP));
         addPiece(new ChessPosition(8, 7), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.KNIGHT));
         addPiece(new ChessPosition(8, 8), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.ROOK));
-
-
     }
+
+    public void rebuild() {
+        if (squares == null) return;
+        for (int r = 0; r < squares.length; r++) {
+            for (int c = 0; c < squares[r].length; c++) {
+                ChessPiece piece = squares[r][c];
+                if (piece != null) {
+                    squares[r][c] = piece;
+                }
+            }
+        }
+    }
+
 
     @Override
     public boolean equals(Object o) {
