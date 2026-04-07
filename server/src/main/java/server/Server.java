@@ -5,16 +5,16 @@ import dataaccess.*;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.json.JsonMapper;
-import io.javalin.websocket.WsContext;
 import service.GameService;
 import service.UserService;
 import service.ClearService;
 import com.google.gson.Gson;
+import websockethandler.WebSocketHandler;
+import websocket.commands.UserGameCommand;
 
 import java.lang.reflect.Type;
-import java.sql.SQLException;
+import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
 
@@ -22,7 +22,8 @@ public class Server {
     private final UserService userService;
     private final GameService gameService;
     private final ClearService clearService;
-    private final Map<Integer, ConcurrentHashMap<String, WsContext>> gameSockets = new ConcurrentHashMap<>();
+    private final WebSocketHandler wsHandler;
+    private final Gson gson = new Gson();
 
     public Server() {
         UserDAO userDAO = new SQLUserDAO();
@@ -32,12 +33,15 @@ public class Server {
         userService = new UserService(userDAO, authDAO);
         gameService = new GameService(gameDAO, authDAO);
         clearService = new ClearService(userDAO, authDAO, gameDAO);
-
-        Gson gson = new Gson();
+        wsHandler = new WebSocketHandler(gameService);
 
         javalin = Javalin.create(config -> {
             config.staticFiles.add("web");
             config.jsonMapper(new GsonMapper(gson));
+
+            config.jetty.modifyWebSocketServletFactory(factory -> {
+                factory.setIdleTimeout(Duration.ofMinutes(15));
+            });
         });
 
         // HTTP endpoints
@@ -50,24 +54,18 @@ public class Server {
         javalin.put("/game", this::joinGame);
         javalin.put("/game/observe", this::observeGame);
 
+        // WebSocket endpoint
         javalin.ws("/ws", ws -> {
-
-            ws.onConnect(ctx -> {
-                System.out.println("[WS] Client connected: " + ctx.sessionId());
-
+            ws.onConnect(ctx -> System.out.println("[WS] Connected: " + ctx.sessionId()));
+            ws.onClose(ctx -> wsHandler.removeClient(ctx));
+            ws.onError(ctx -> System.out.println("[WS ERROR] " + ctx.error()));
+            ws.onMessage(ctx -> {
                 try {
-                    ctx.send("{\"serverMessageType\":\"NOTIFICATION\",\"message\":\"Connected to server\",\"isError\":false}");
+                    UserGameCommand cmd = gson.fromJson(ctx.message(), UserGameCommand.class);
+                    wsHandler.handleCommand(cmd, ctx);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    System.out.println("[WS ERROR] " + e.getMessage());
                 }
-            });
-
-            ws.onClose(ctx -> {
-                System.out.println("[WS] Client disconnected: " + ctx.sessionId());
-            });
-
-            ws.onError(ctx -> {
-                System.out.println("[WS ERROR] " + ctx.error());
             });
         });
     }
@@ -80,107 +78,35 @@ public class Server {
             e.printStackTrace();
             return -1;
         }
-
         javalin.start(desiredPort);
         return javalin.port();
     }
 
-    public void stop() {
-        javalin.stop();
-    }
+    public void stop() { javalin.stop(); }
 
     private String requireAuthToken(Context ctx) throws DataAccessException {
         String token = ctx.header("authorization");
-        if (token == null) {
-            throw new DataAccessException("unauthorized");
-        }
+        if (token == null) throw new DataAccessException("unauthorized");
         return token;
-    }
-
-    private void listGames(Context ctx) {
-        try {
-            String token = requireAuthToken(ctx);
-            ListGamesResult result = gameService.listGames(token);
-            ctx.status(200).json(result);
-        } catch (DataAccessException e) {
-            handleDataAccessException(e, ctx);
-        } catch (Exception e) {
-            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
-        }
-    }
-
-    private void createGame(Context ctx) {
-        try {
-            String token = requireAuthToken(ctx);
-            CreateGameRequest req = ctx.bodyAsClass(CreateGameRequest.class);
-
-            if (req == null || req.gameName() == null || req.gameName().isBlank()) {
-                ctx.status(400).json(Map.of("message", "Error: bad request"));
-                return;
-            }
-
-            CreateGameResult result = gameService.createGame(req, token);
-            ctx.status(200).json(result);
-        } catch (DataAccessException e) {
-            handleDataAccessException(e, ctx);
-        } catch (Exception e) {
-            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
-        }
-    }
-
-    private void joinGame(Context ctx) {
-        try {
-            String token = requireAuthToken(ctx);
-
-            JoinGameRequest req = ctx.bodyAsClass(JoinGameRequest.class);
-
-            if (req.playerColor() == null || req.playerColor().trim().isEmpty()) {
-                throw new DataAccessException("bad request");
-            }
-
-            gameService.joinGame(req, token);
-            ctx.status(200).json(Map.of());
-        } catch (DataAccessException e) {
-            handleDataAccessException(e, ctx);
-        } catch (Exception e) {
-            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
-        }
-    }
-
-    private void observeGame(Context ctx) {
-        try {
-            String token = requireAuthToken(ctx);
-            ObserveGameRequest req = ctx.bodyAsClass(ObserveGameRequest.class);
-
-            if (req == null || req.gameID() <= 0) {
-                ctx.status(400).json(Map.of("message", "Error: bad request"));
-                return;
-            }
-
-            gameService.observeGame(req, token);
-            ctx.status(200).json(Map.of());
-        } catch (DataAccessException e) {
-            handleDataAccessException(e, ctx);
-        } catch (Exception e) {
-            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
-        }
     }
 
     private void register(Context ctx) {
         try {
             RegisterRequest req = ctx.bodyAsClass(RegisterRequest.class);
 
-            if (req.username() == null || req.password() == null || req.email() == null) {
+            if (req.username() == null || req.username().isEmpty() ||
+                    req.password() == null || req.password().isEmpty() ||
+                    req.email() == null || req.email().isEmpty()) {
                 ctx.status(400).json(Map.of("message", "Error: bad request"));
                 return;
             }
 
-            RegisterResult result = userService.register(req);
-            ctx.status(200).json(result);
+            ctx.status(200).json(userService.register(req));
+
         } catch (DataAccessException e) {
             handleDataAccessException(e, ctx);
         } catch (Exception e) {
-            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
+            ctx.status(400).json(Map.of("message", "Error: bad request"));
         }
     }
 
@@ -193,70 +119,95 @@ public class Server {
                 return;
             }
 
-            LoginResult result = userService.login(req);
-            ctx.status(200).json(result);
+            ctx.status(200).json(userService.login(req));
+
         } catch (DataAccessException e) {
             handleDataAccessException(e, ctx);
         } catch (Exception e) {
-            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
+            ctx.status(400).json(Map.of("message", "Error: bad request"));
         }
     }
 
     private void logout(Context ctx) {
         try {
             String token = requireAuthToken(ctx);
-            LogoutRequest req = new LogoutRequest(token);
-            userService.logout(req);
+            userService.logout(new LogoutRequest(token));
+            ctx.status(200).json(Map.of());
+        } catch (DataAccessException e) { handleDataAccessException(e, ctx); }
+    }
+
+    private void listGames(Context ctx) {
+        try {
+            String token = requireAuthToken(ctx);
+            ctx.status(200).json(gameService.listGames(token));
+        } catch (DataAccessException e) { handleDataAccessException(e, ctx); }
+    }
+
+    private void createGame(Context ctx) {
+        try {
+            String token = requireAuthToken(ctx);
+            CreateGameRequest req = ctx.bodyAsClass(CreateGameRequest.class);
+            ctx.status(200).json(gameService.createGame(req, token));
+        } catch (DataAccessException e) { handleDataAccessException(e, ctx); }
+    }
+
+    private void joinGame(Context ctx) {
+        try {
+            String token = requireAuthToken(ctx);
+            JoinGameRequest req = ctx.bodyAsClass(JoinGameRequest.class);
+            gameService.joinGame(req, token);
             ctx.status(200).json(Map.of());
         } catch (DataAccessException e) {
             handleDataAccessException(e, ctx);
         } catch (Exception e) {
-            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
+            System.out.println("CRITICAL ERROR IN JOIN: " + e.getMessage());
+            e.printStackTrace();
+            ctx.status(400).json(Map.of("message", "Error: bad request"));
         }
+    }
+
+    private void observeGame(Context ctx) {
+        try {
+            String token = requireAuthToken(ctx);
+            ObserveGameRequest req = ctx.bodyAsClass(ObserveGameRequest.class);
+            gameService.observeGame(req, token);
+            ctx.status(200).json(Map.of());
+        } catch (DataAccessException e) { handleDataAccessException(e, ctx); }
     }
 
     private void clear(Context ctx) {
         try {
             clearService.clear();
+
+            wsHandler.removeClient(null);
+
             ctx.status(200).json(Map.of());
         } catch (Exception e) {
-            e.printStackTrace();
-            ctx.status(500).json(Map.of("message", "Error: internal server error"));
-        }
-    }
-
-    private void handleDataAccessException(DataAccessException e, Context ctx) {
-        String msg = e.getMessage().toLowerCase();
-
-        if (msg.contains("bad request")) {
-            ctx.status(400).json(Map.of("message", "Error: bad request"));
-        } else if (msg.contains("already taken") || msg.contains("taken")) {
-            ctx.status(403).json(Map.of("message", "Error: already taken"));
-        } else if (msg.contains("unauthorized")) {
-            ctx.status(401).json(Map.of("message", "Error: unauthorized"));
-        } else if (e.getCause() instanceof SQLException || msg.contains("db")) {
-            ctx.status(500).json(Map.of("message", "Error: internal server error"));
-        } else {
             ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
         }
     }
 
-    // --- JSON mapper ---
+    private void handleDataAccessException(DataAccessException e, Context ctx) {
+        String msg = e.getMessage(); // Removed .toLowerCase() for a more precise check
+
+        if (msg.contains("bad request")) {
+            ctx.status(400).json(Map.of("message", "Error: bad request"));
+        }
+        else if (msg.equals("already taken")) {
+            ctx.status(403).json(Map.of("message", "Error: already taken"));
+        }
+        else if (msg.contains("unauthorized")) {
+            ctx.status(401).json(Map.of("message", "Error: unauthorized"));
+        }
+        else {
+            ctx.status(500).json(Map.of("message", "Error: " + e.getMessage()));
+        }
+    }
+
     public static class GsonMapper implements JsonMapper {
         private final Gson gson;
-
-        public GsonMapper(Gson gson) {
-            this.gson = gson;
-        }
-
-        @Override
-        public <T> T fromJsonString(String json, Type targetType) {
-            return gson.fromJson(json, targetType);
-        }
-
-        @Override
-        public String toJsonString(Object obj, Type type) {
-            return gson.toJson(obj);
-        }
+        public GsonMapper(Gson gson) { this.gson = gson; }
+        @Override public <T> T fromJsonString(String json, Type targetType) { return gson.fromJson(json, targetType); }
+        @Override public String toJsonString(Object obj, Type type) { return gson.toJson(obj); }
     }
 }

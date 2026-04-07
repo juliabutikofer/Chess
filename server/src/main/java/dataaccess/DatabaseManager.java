@@ -36,9 +36,9 @@ public class DatabaseManager {
             stmt.executeUpdate("""
                 CREATE TABLE IF NOT EXISTS Users (
                     id INT AUTO_INCREMENT PRIMARY KEY,
-                    username VARCHAR(50) NOT NULL UNIQUE,
+                    username VARCHAR(255) NOT NULL UNIQUE,
                     passwordHash VARCHAR(255) NOT NULL,
-                    email VARCHAR(100)
+                    email VARCHAR(255)
                 );
             """);
 
@@ -46,12 +46,10 @@ public class DatabaseManager {
             stmt.executeUpdate("""
                 CREATE TABLE IF NOT EXISTS Games (
                     id INT AUTO_INCREMENT PRIMARY KEY,
-                    whitePlayer VARCHAR(50),
-                    blackPlayer VARCHAR(50),
-                    gameName VARCHAR(100),
-                    gameState TEXT,
-                    status VARCHAR(20),
-                    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    whitePlayer VARCHAR(255),
+                    blackPlayer VARCHAR(255),
+                    gameName VARCHAR(255),
+                    gameState TEXT
                 );
             """);
 
@@ -59,7 +57,7 @@ public class DatabaseManager {
             stmt.executeUpdate("""
                 CREATE TABLE IF NOT EXISTS AuthTokens (
                     token VARCHAR(255) PRIMARY KEY,
-                    username VARCHAR(50) NOT NULL,
+                    username VARCHAR(255) NOT NULL,
                     FOREIGN KEY (username) REFERENCES Users(username) ON DELETE CASCADE
                 );
             """);
@@ -71,7 +69,7 @@ public class DatabaseManager {
         }
     }
 
-    static Connection getConnection() throws DataAccessException {
+    public static Connection getConnection() throws DataAccessException {
         try {
             return DriverManager.getConnection(connectionUrl + "/" + databaseName, dbUsername, dbPassword);
         } catch (SQLException ex) {
@@ -84,7 +82,6 @@ public class DatabaseManager {
             if (propStream == null) {
                 throw new Exception("Unable to load db.properties");
             }
-
             Properties props = new Properties();
             props.load(propStream);
             loadProperties(props);

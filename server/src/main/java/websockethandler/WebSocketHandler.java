@@ -104,7 +104,10 @@ public class WebSocketHandler {
     private void handleLeave(UserGameCommand cmd, WsContext ctx) {
         try {
             int gameId = cmd.getGameID();
-            AuthData auth = gameService.getAuth(cmd.getAuthToken());
+            String authToken = cmd.getAuthToken();
+            AuthData auth = gameService.getAuth(authToken);
+
+            gameService.leaveGame(gameId, authToken);
 
             removeClient(ctx, gameId);
 

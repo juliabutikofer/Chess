@@ -33,10 +33,7 @@ public class SQLGameDAO implements GameDAO {
             stmt.setString(3, game.gameName());
             stmt.setString(4, gson.toJson(game.game()));
 
-            int affected = stmt.executeUpdate();
-            if (affected == 0) {
-                throw new DataAccessException("Inserting game failed, no rows affected.");
-            }
+            stmt.executeUpdate();
 
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
@@ -45,7 +42,6 @@ public class SQLGameDAO implements GameDAO {
                     throw new DataAccessException("Inserting game failed, no ID obtained.");
                 }
             }
-
         } catch (SQLException e) {
             throw new DataAccessException("Failed to insert game", e);
         }
@@ -60,18 +56,19 @@ public class SQLGameDAO implements GameDAO {
             stmt.setInt(1, gameID);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
+                    String white = rs.getString("whitePlayer");
+                    String black = rs.getString("blackPlayer");
+
                     return new GameData(
                             rs.getInt("id"),
-                            rs.getString("whitePlayer"),
-                            rs.getString("blackPlayer"),
+                            (white == null || white.isBlank()) ? null : white.trim(),
+                            (black == null || black.isBlank()) ? null : black.trim(),
                             rs.getString("gameName"),
                             gson.fromJson(rs.getString("gameState"), ChessGame.class)
                     );
-                } else {
-                    return null;
                 }
+                return null;
             }
-
         } catch (SQLException e) {
             throw new DataAccessException("Failed to get game", e);
         }
@@ -80,22 +77,24 @@ public class SQLGameDAO implements GameDAO {
     @Override
     public List<GameData> listGames() throws DataAccessException {
         String sql = "SELECT id, whitePlayer, blackPlayer, gameName, gameState FROM Games";
-        List<GameData> games = new ArrayList<>();
+        List<GameData> gamesList = new ArrayList<>();
         try (Connection conn = DatabaseManager.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
-                games.add(new GameData(
+                String white = rs.getString("whitePlayer");
+                String black = rs.getString("blackPlayer");
+
+                gamesList.add(new GameData(
                         rs.getInt("id"),
-                        rs.getString("whitePlayer"),
-                        rs.getString("blackPlayer"),
+                        (white == null || white.isBlank()) ? null : white.trim(),
+                        (black == null || black.isBlank()) ? null : black.trim(),
                         rs.getString("gameName"),
                         gson.fromJson(rs.getString("gameState"), ChessGame.class)
                 ));
             }
-            return games;
-
+            return gamesList;
         } catch (SQLException e) {
             throw new DataAccessException("Failed to list games", e);
         }
@@ -103,6 +102,7 @@ public class SQLGameDAO implements GameDAO {
 
     @Override
     public void updateGame(GameData game) throws DataAccessException {
+        // FIX: Ensure whitePlayer and blackPlayer are in the UPDATE statement!
         String sql = "UPDATE Games SET whitePlayer = ?, blackPlayer = ?, gameName = ?, gameState = ? WHERE id = ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -114,7 +114,6 @@ public class SQLGameDAO implements GameDAO {
             stmt.setInt(5, game.gameID());
 
             stmt.executeUpdate();
-
         } catch (SQLException e) {
             throw new DataAccessException("Failed to update game", e);
         }

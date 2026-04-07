@@ -6,10 +6,7 @@ import dataaccess.*;
 import model.AuthData;
 import model.GameData;
 
-import java.util.Collection;
-
 public class GameService {
-
     private final GameDAO games;
     private final AuthDAO auths;
 
@@ -18,165 +15,127 @@ public class GameService {
         this.auths = auths;
     }
 
-    public void observeGame(ObserveGameRequest req, String token) throws DataAccessException {
-        GameData game = games.getGame(req.gameID());
-        if (game == null) {
-            throw new DataAccessException("bad request");
-        }
-
-        AuthData auth = auths.getAuth(token);
-        if (auth == null) {
-            throw new DataAccessException("unauthorized");
-        }
-        String username = auth.username();
-
-        if (username.equals(game.whiteUsername()) || username.equals(game.blackUsername())) {
-            throw new DataAccessException("Cannot observe: already a player");
-        }
-    }
-
-    public ListGamesResult listGames(String authToken) throws DataAccessException {
-        AuthData auth = auths.getAuth(authToken);
-        if (auth == null) {
-            throw new DataAccessException("unauthorized");
-        }
-
-        Collection<GameData> list = games.listGames();
-        return new ListGamesResult(list);
-    }
-
-    public CreateGameResult createGame(CreateGameRequest req, String authToken) throws DataAccessException {
-        if (req == null || req.gameName() == null || req.gameName().isBlank()) {
-            throw new DataAccessException("bad request");
-        }
-
-        AuthData auth = auths.getAuth(authToken);
-        if (auth == null) {
-            throw new DataAccessException("unauthorized");
-        }
-
-        GameData game = new GameData(
-                0,
-                null,
-                null,
-                req.gameName(),
-                new ChessGame()
-        );
-
-        int gameID = games.insertGame(game);
-        return new CreateGameResult(gameID);
-    }
-
     public void joinGame(JoinGameRequest req, String authToken) throws DataAccessException {
-        if (req == null) {
-            throw new DataAccessException("bad request");
-        }
-
-        AuthData auth = auths.getAuth(authToken);
-        if (auth == null) {
-            throw new DataAccessException("unauthorized");
-        }
-
-        GameData game = games.getGame(req.gameID());
-        if (game == null) {
-            throw new DataAccessException("bad request");
-        }
-
-        String username = auth.username();
-        String color = req.playerColor();
-
-        if (color == null || color.trim().isEmpty()) {
-            throw new DataAccessException("bad request");
-        }
-
-        color = color.trim().toUpperCase();
-
-        if (!color.equals("WHITE") && !color.equals("BLACK")) {
-            throw new DataAccessException("bad request");
-        }
-
-        if (color.equals("WHITE")) {
-            if (game.whiteUsername() != null) {
-                throw new DataAccessException("already taken");
-            }
-            game = new GameData(
-                    game.gameID(),
-                    username,
-                    game.blackUsername(),
-                    game.gameName(),
-                    game.game()
-            );
-        } else { // BLACK
-            if (game.blackUsername() != null) {
-                throw new DataAccessException("already taken");
-            }
-            game = new GameData(
-                    game.gameID(),
-                    game.whiteUsername(),
-                    username,
-                    game.gameName(),
-                    game.game()
-            );
-        }
-
-        games.updateGame(game);
-    }
-
-    public void makeMove(MakeMoveRequest req, String authToken) throws DataAccessException {
         AuthData auth = auths.getAuth(authToken);
         if (auth == null) throw new DataAccessException("unauthorized");
 
-        GameData gameData = games.getGame(req.gameID());
+        GameData game = games.getGame(req.gameID());
+        if (game == null) throw new DataAccessException("bad request");
+
+        String username = auth.username();
+        String color = (req.playerColor() != null) ? req.playerColor().toUpperCase() : null;
+        if (color == null || color.isBlank()) throw new DataAccessException("bad request");
+
+        String whiteUser = game.whiteUsername();
+        String blackUser = game.blackUsername();
+
+        if (color.equals("WHITE")) {
+            if (whiteUser != null && !whiteUser.isBlank() && !whiteUser.equalsIgnoreCase(username)) {
+                throw new DataAccessException("already taken");
+            }
+            whiteUser = username;
+        } else if (color.equals("BLACK")) {
+            if (blackUser != null && !blackUser.isBlank() && !blackUser.equalsIgnoreCase(username)) {
+                throw new DataAccessException("already taken");
+            }
+            blackUser = username;
+        } else {
+            throw new DataAccessException("bad request");
+        }
+
+        games.updateGame(new GameData(game.gameID(), whiteUser, blackUser, game.gameName(), game.game()));
+    }
+
+    public ChessGame makeMove(int gameId, ChessMove move, String authToken) throws DataAccessException {
+        AuthData auth = auths.getAuth(authToken);
+        if (auth == null) throw new DataAccessException("unauthorized");
+
+        GameData gameData = games.getGame(gameId);
         if (gameData == null) throw new DataAccessException("bad request");
 
         ChessGame chess = gameData.game();
 
-        String moveStr = req.move();
-        if (moveStr == null || moveStr.length() < 4) {
-            throw new DataAccessException("invalid move string");
+        if (chess.isOver()) {
+            throw new DataAccessException("Error: game is over");
         }
 
-        // Convert string to ChessPosition
-        ChessPosition from = ChessPosition.fromString(moveStr.substring(0, 2));
-        ChessPosition to = ChessPosition.fromString(moveStr.substring(2, 4));
+        String username = auth.username();
+        boolean isWhite = (gameData.whiteUsername() != null && gameData.whiteUsername().equals(username));
+        boolean isBlack = (gameData.blackUsername() != null && gameData.blackUsername().equals(username));
 
-        ChessPiece.PieceType promotion = req.promotion(); // may be null
-        ChessMove move = new ChessMove(from, to, promotion);
+        if (!isWhite && !isBlack) {
+            throw new DataAccessException("Error: you are an observer");
+        }
+
+        ChessGame.TeamColor turn = chess.getTeamTurn();
+        if ((turn == ChessGame.TeamColor.WHITE && !isWhite) ||
+                (turn == ChessGame.TeamColor.BLACK && !isBlack)) {
+            throw new DataAccessException("Error: not your turn");
+        }
 
         try {
             chess.makeMove(move);
         } catch (InvalidMoveException e) {
-            throw new DataAccessException("invalid move");
+            throw new DataAccessException("Error: invalid move");
         }
-
-        games.updateGame(gameData);
-    }
-
-    public ChessGame getGame(int gameId) throws DataAccessException {
-        GameData data = games.getGame(gameId);
-        if (data == null) throw new DataAccessException("Game not found");
-        return data.game();
-    }
-
-    public ChessGame makeMove(int gameId, String move, String authToken) throws DataAccessException {
-        MakeMoveRequest req = new MakeMoveRequest(gameId, move, null); // null promotion
-        makeMove(req, authToken);
-        return getGame(gameId);
-    }
-
-    public ChessGame resignGame(int gameId, String authToken) throws DataAccessException {
-        GameData gameData = games.getGame(gameId);
-        if (gameData == null) throw new DataAccessException("bad request");
-
-        AuthData auth = auths.getAuth(authToken);
-        if (auth == null) throw new DataAccessException("unauthorized");
-
-        String username = auth.username();
-
-        ChessGame chess = gameData.game();
-        chess.resign(username);
 
         games.updateGame(gameData);
         return chess;
     }
+
+    public void observeGame(ObserveGameRequest req, String token) throws DataAccessException {
+        if (games.getGame(req.gameID()) == null) throw new DataAccessException("bad request");
+        if (auths.getAuth(token) == null) throw new DataAccessException("unauthorized");
+    }
+
+    public ListGamesResult listGames(String authToken) throws DataAccessException {
+        if (auths.getAuth(authToken) == null) throw new DataAccessException("unauthorized");
+        return new ListGamesResult(games.listGames());
+    }
+
+    public CreateGameResult createGame(CreateGameRequest req, String authToken) throws DataAccessException {
+        if (req == null || req.gameName() == null || req.gameName().isBlank()) throw new DataAccessException("bad request");
+        if (auths.getAuth(authToken) == null) throw new DataAccessException("unauthorized");
+        int id = games.insertGame(new GameData(0, null, null, req.gameName(), new ChessGame()));
+        return new CreateGameResult(id);
+    }
+
+    public ChessGame resignGame(int gameId, String authToken) throws DataAccessException {
+        GameData gd = games.getGame(gameId);
+        AuthData ad = auths.getAuth(authToken);
+        if (gd == null) throw new DataAccessException("bad request");
+        if (ad == null) throw new DataAccessException("unauthorized");
+
+        if (gd.game().isOver()) throw new DataAccessException("Error: game already over");
+        if (!ad.username().equalsIgnoreCase(gd.whiteUsername()) && !ad.username().equalsIgnoreCase(gd.blackUsername())) {
+            throw new DataAccessException("Error: observers cannot resign");
+        }
+
+        gd.game().resign(ad.username());
+        games.updateGame(gd);
+        return gd.game();
+    }
+
+    public void leaveGame(int gameID, String authToken) throws DataAccessException {
+        AuthData auth = auths.getAuth(authToken);
+        if (auth == null) throw new DataAccessException("unauthorized");
+
+        GameData game = games.getGame(gameID);
+        if (game == null) throw new DataAccessException("bad request");
+
+        String username = auth.username();
+        String white = game.whiteUsername();
+        String black = game.blackUsername();
+
+        if (username.equals(white)) {
+            white = null;
+        } else if (username.equals(black)) {
+            black = null;
+        }
+
+        games.updateGame(new GameData(game.gameID(), white, black, game.gameName(), game.game()));
+    }
+
+    public AuthData getAuth(String token) throws DataAccessException { return auths.getAuth(token); }
+    public ChessGame getGame(int id) throws DataAccessException { return games.getGame(id).game(); }
 }
