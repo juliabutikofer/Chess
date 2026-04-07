@@ -1,5 +1,6 @@
 package websocket.messages;
 
+import com.google.gson.annotations.SerializedName;
 import chess.ChessGame;
 import java.util.Objects;
 
@@ -14,8 +15,11 @@ public class ServerMessage {
         NOTIFICATION
     }
 
+    // Explicitly match JSON field name
+    @SerializedName("serverMessageType")
     private ServerMessageType serverMessageType;
 
+    // Payloads
     public ChessGame game;       // for LOAD_GAME
     public String message;       // for NOTIFICATION
     public String errorMessage;  // for ERROR
@@ -41,7 +45,6 @@ public class ServerMessage {
         return serverMessageType;
     }
 
-    // added setter
     public void setServerMessageType(ServerMessageType serverMessageType) {
         this.serverMessageType = serverMessageType;
     }
