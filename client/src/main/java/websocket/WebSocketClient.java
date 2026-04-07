@@ -24,17 +24,17 @@ public class WebSocketClient {
     private String perspective;
 
     public WebSocketClient(String serverUrl, UserGameCommand connectCommand, ChessGame game, String perspective) {
-        this.currentGame = game;
+//        this.currentGame = null;
         this.connectCommand = connectCommand;
         this.perspective = perspective;
 
         try {
-            System.out.println("[WS CLIENT] Attempting to connect to: " + serverUrl);
+//            System.out.println("[WS CLIENT] Attempting to connect to: " + serverUrl);
             webSocket = HttpClient.newHttpClient()
                     .newWebSocketBuilder()
                     .buildAsync(URI.create(serverUrl), new Listener())
                     .join();
-            System.out.println("[WS CLIENT] Listener registered.");
+//            System.out.println("[WS CLIENT] Listener registered.");
         } catch (Exception e) {
             System.out.println("[WS ERROR] Connection failed: " + e.getMessage());
         }
@@ -77,7 +77,7 @@ public class WebSocketClient {
                 );
                 cmd.setMove(move);
                 String json = gson.toJson(cmd);
-                System.out.println("[WS CLIENT] Sending Move: " + json);
+//                System.out.println("[WS CLIENT] Sending Move: " + json);
                 webSocket.sendText(json, true);
             } catch (Exception e) {
                 System.out.println("[WS ERROR] Move sending failed: " + e.getMessage());
@@ -87,7 +87,7 @@ public class WebSocketClient {
 
     public void setBoardUpdateListener(BoardUpdateListener listener) {
         this.mainListener = listener;
-        System.out.println("[WS CLIENT] New Listener attached.");
+//        System.out.println("[WS CLIENT] New Listener attached.");
     }
 
     public interface BoardUpdateListener {
@@ -99,7 +99,7 @@ public class WebSocketClient {
     private class Listener implements WebSocket.Listener {
         @Override
         public void onOpen(WebSocket webSocket) {
-            System.out.println("!!! WEBSOCKET OPENED SUCCESSFULLY !!!");
+//            System.out.println("!!! WEBSOCKET OPENED SUCCESSFULLY !!!");
             connected.complete(null);
             webSocket.request(1); // keep listening
         }
@@ -107,19 +107,19 @@ public class WebSocketClient {
         @Override
         public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
             String json = data.toString();
-            System.out.println("\n*****************************************");
-            System.out.println(">>> onText triggered (" + json.length() + " chars)");
-            System.out.println("[WS CLIENT] Raw JSON: " + json);
-            System.out.println("*****************************************\n");
+//            System.out.println("\n*****************************************");
+//            System.out.println(">>> onText triggered (" + json.length() + " chars)");
+//            System.out.println("[WS CLIENT] Raw JSON: " + json);
+//            System.out.println("*****************************************\n");
 
             try {
                 ServerMessage msg = gson.fromJson(json, ServerMessage.class);
 
                 if (msg == null) {
-                    System.out.println(">>> Gson returned null ServerMessage");
+//                    System.out.println(">>> Gson returned null ServerMessage");
                 } else {
-                    System.out.println(">>> Gson parsed msgType=" + msg.getServerMessageType());
-                    System.out.println(">>> Game object is " + (msg.game == null ? "NULL" : "NON-NULL"));
+//                    System.out.println(">>> Gson parsed msgType=" + msg.getServerMessageType());
+//                    System.out.println(">>> Game object is " + (msg.game == null ? "NULL" : "NON-NULL"));
                 }
 
                 if (msg != null && mainListener != null) {
@@ -134,7 +134,7 @@ public class WebSocketClient {
                                     System.out.println("[WS CLIENT DEBUG] Board rebuild skipped / not implemented.");
                                 }
 
-                                System.out.println("[WS CLIENT] Updating game state and redrawing board...");
+//                                System.out.println("[WS CLIENT] Updating game state and redrawing board...");
                                 WebSocketClient.this.currentGame = msg.game;
                                 mainListener.onBoardUpdate(msg.game);
                             } else {
@@ -157,9 +157,14 @@ public class WebSocketClient {
 
         @Override
         public void onError(WebSocket webSocket, Throwable error) {
-            System.out.println("!!! WS ERROR: " + error.getMessage());
-            error.printStackTrace(System.out);
+            String msg = error.getMessage();
+            if (msg != null && msg.contains("invalid move")) {
+                return;
+            }
+
+            System.out.println("[WS ERROR] " + msg);
         }
+
 
         @Override
         public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {

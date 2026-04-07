@@ -23,7 +23,6 @@ public class ChessBoardPrinter {
         }
 
         printFiles(out, whitePerspective);
-        out.println();
 
         try {
             var f = ChessBoard.class.getDeclaredField("squares");
@@ -32,8 +31,7 @@ public class ChessBoardPrinter {
             String firstSquare = (arr != null && arr[0][0] != null)
                     ? arr[0][0].getPieceType().toString()
                     : "null";
-            out.println("[PRINTER DEBUG] squares[0][0] = " + firstSquare);
-            out.println();
+            // out.println("[PRINTER DEBUG] squares[0][0] = " + firstSquare);
         } catch (Exception ignore) {
         }
 
@@ -69,10 +67,10 @@ public class ChessBoardPrinter {
             out.println(" " + row);
         }
 
-        out.println();
         printFiles(out, whitePerspective);
         out.flush();
     }
+
 
     private static void printFiles(PrintStream out, boolean whitePerspective) {
         out.print("  ");

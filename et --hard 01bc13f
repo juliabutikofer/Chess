@@ -1,0 +1,86 @@
+[33mbcdaf15[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m imports
+[33m01bc13f[m added observe endpoint and got observeGame test working
+[33mae04f28[m cleaning up UIs
+[33mb4cb8b4[m code quality
+[33meaa281f[m trying to get observe game working
+[33m0b982cd[m debugging and testing
+[33mb367317[m tried adding observe endpoint but backtracked
+[33mb90431c[m observe game tests
+[33mf57ec7a[m join game tests
+[33mf4af169[m list games test
+[33m5a71e0d[m create Game tests
+[33m2dbaa3a[m logout tests
+[33m594b444[m login tests
+[33m57f98f5[m register tests
+[33me778a97[m ChessBoardPrinter class
+[33m93d33e9[m clientmain connection
+[33m9e62ee8[m postloginUI class finish
+[33m4eb20dd[m postloginUI class
+[33m84c75de[m preloginUI class
+[33m7c9b057[m fixed some of the dtos
+[33m89cddfb[m serverFacade class
+[33mf81fbcb[m fixing code quality
+[33m8ca08c5[m added more unit tests
+[33m83be162[m fixed clear function
+[33m4156d97[m fixing bcrypt
+[33me3fc62e[m reorganizing files
+[33m54dac94[m reorganizing files
+[33m5b1642f[m fixed password hashing, previous tests are now passing
+[33mc84ec13[m all tests passing
+[33m3539034[m jUnit tests
+[33m286fb05[m bcrypt passing
+[33m9974a16[m persistance test passing
+[33md56e85b[m working on database manager
+[33ma80cccd[m writing dao tests
+[33mca7feb0[m implement sql game and auth dao
+[33m3ef4523[m implement sql user dao
+[33m417a153[m get database connection with sql
+[33m8b0d82c[m organizing files, adding username and password
+[33me3fc851[m adding brackets where needed
+[33m0dd036e[m minor fixed to chessmove and chessgame
+[33m1a95da3[m added more functions to chessgame
+[33m6f916ba[m added step and slider function for chesspiece
+[33m06d86bd[m dto package name correction
+[33m50f4596[m changed dto package name
+[33m53f5e23[m refactored the try catch blocks in the server to avoid duplicated code
+[33m1f2af7e[m passed tests and fixed spacing
+[33m7459bd3[m refactored and added requireAuthToken function in server
+[33m0a39f5c[m refactored and added requireAuthToken function in server
+[33m1aedde2[m refactored and made sure all my dto's were records
+[33m3273b53[m wrote tests for clear service
+[33m1c4d27d[m wrote tests for game service
+[33m5c53472[m wrote tests for register service
+[33m20eeb84[m got the next couple tests passing for log in log out
+[33me7263c3[m organized files and made auth and memory classes in the data access folder
+[33mbc3177e[m added GameService class
+[33m690eae6[m got server working to print out the username and password for register
+[33m9a9f075[m added dto classes
+[33me2e53b9[m Merge remote-tracking branch 'origin/main'
+[33md2ace8f[m added model classes and organized and added files
+[33mc841699[m Merge remote-tracking branch 'origin/main'
+[33mcfb7b94[m Merge remote-tracking branch 'origin/main'
+[33mb323567[m Merge remote-tracking branch 'origin/main'
+[33m2a7999b[m Merge remote-tracking branch 'origin/main'
+[33m9a20db9[m Merge remote-tracking branch 'origin/main'
+[33m098960c[m Merge remote-tracking branch 'origin/main'
+[33m7065248[m added new function hasAnyLegalMove and organized code
+[33m5fb6254[m Merge remote-tracking branch 'origin/main'
+[33m9ef1c3e[m implemented equals and hashcode methods
+[33m79fbff3[m went back to the old way because it wasn't working, but added function applyMove
+[33maf9391a[m went back to the old way because it wasn't working
+[33mbd7393d[m restructured code to implement iterators
+[33m1a37f55[m implemented checkmate function
+[33me4ec69f[m fixed make move and valid move, implemented copy constructor
+[33md553497[m implemented isInCheck and started testing
+[33m7f0e09c[m implemented valid moves and make move
+[33m595afa7[m implemented getters and setters for ChessGame
+[33md199f83[m passing all tests and cleaning up code
+[33mb91d7b5[m implement promotion and chess piece pawn
+[33me00761d[m implement chessPiece for king, queen and knight
+[33mfa25e92[m implement chessPiece for rook and bishop
+[33ma59eced[m implement chess piece layout
+[33m2b3d32f[m implement chessboard and equals/hashcode
+[33m8f85747[m implement basic move functionality
+[33m76375ef[m implement basic move functionality
+[33me2d0d4a[m initial(notes) creation
+[33m6bf493b[m Initial commit

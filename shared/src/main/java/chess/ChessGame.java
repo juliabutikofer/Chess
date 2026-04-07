@@ -148,22 +148,26 @@ public class ChessGame {
          * @param move chess move to perform
          * @throws InvalidMoveException if move is invalid
          */
-    public void makeMove(ChessMove move) throws InvalidMoveException {
-        ChessPiece piece = board.getPiece(move.getStartPosition());
-        if (piece == null || piece.getTeamColor() != teamTurn) {
-            throw new InvalidMoveException("Can't move piece or not your turn");
+        public void makeMove(ChessMove move) throws InvalidMoveException {
+            ChessPiece piece = board.getPiece(move.getStartPosition());
+            if (piece == null || piece.getTeamColor() != teamTurn) {
+                throw new InvalidMoveException("Can't move piece or not your turn");
+            }
+
+            Collection<ChessMove> validMoves = validMoves(move.getStartPosition());
+            if (!validMoves.contains(move)) {
+                throw new InvalidMoveException("Move not valid");
+            }
+
+            applyMoveToBoard(board, move, piece);
+
+            teamTurn = (teamTurn == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
+
+            if (isInCheckmate(teamTurn) || isInStalemate(teamTurn)) {
+                isOver = true;
+            }
         }
 
-        Collection<ChessMove> validMoves = validMoves(move.getStartPosition());
-        if (!validMoves.contains(move)) {
-            throw new InvalidMoveException("Move not valid");
-        }
-
-        applyMoveToBoard(board, move, piece);
-
-        // Switch turn
-        teamTurn = (teamTurn == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
-    }
 
     /**
      * Determines if the given team is in check

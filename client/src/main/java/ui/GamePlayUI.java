@@ -4,52 +4,83 @@ import chess.*;
 import websocket.WebSocketClient;
 import websocket.commands.UserGameCommand;
 import ChessBoardPrinter.ChessBoardPrinter;
+
 import java.util.Scanner;
 
 public class GamePlayUI {
 
     private final WebSocketClient wsClient;
     private ChessGame game;
-    private String perspective; // "white", "black", "observe"
+    private final String perspective;
     private final Scanner scanner = new Scanner(System.in);
     private boolean running = true;
+    private boolean lastMoveSucceeded = false;
+
 
     public GamePlayUI(WebSocketClient wsClient, ChessGame game, String perspective) {
         this.wsClient = wsClient;
         this.game = game;
         this.perspective = perspective;
 
-        //register listener for updates
         wsClient.setBoardUpdateListener(new WebSocketClient.BoardUpdateListener() {
             @Override
             public void onBoardUpdate(ChessGame updatedGame) {
-                updateBoard(updatedGame);
+                lastMoveSucceeded = true;   // ← mark success
+
+                GamePlayUI.this.game = updatedGame;
+                drawBoard();
+
+                var turn = updatedGame.getTeamTurn() == ChessGame.TeamColor.WHITE
+                        ? "White"
+                        : "Black";
+
+                System.out.println("\n" + turn + " to move");
+                System.out.print("gameplay> ");
             }
+
 
             @Override
             public void onNotification(String message) {
-                System.out.println("[WS] " + message);
-                System.out.print("gameplay> ");
+                System.out.println("\n[WS] " + message);
             }
+
 
             @Override
             public void onError(String errorMessage) {
-                System.out.println("[WS ERROR] " + errorMessage);
-                System.out.print("gameplay> ");
+                lastMoveSucceeded = false;
+                System.out.println("\n" + errorMessage);
+//                System.out.print("gameplay> ");
             }
+
+
         });
     }
 
     public void start() {
         System.out.println("Gameplay started! Type 'help' for commands.");
-        drawBoard();
+
+        Integer gameId = wsClient.getGameID();
+        if (gameId != null) {
+//            System.out.println("[DEBUG] joining game: " + gameId);
+            wsClient.joinGame(gameId);
+        }
+
+        if (this.game == null && wsClient.getGame() != null) {
+            this.game = wsClient.getGame();
+        }
+
+//        if (this.game != null) {
+//            drawBoard();
+//        }
+
         promptLoop();
     }
 
     private void drawBoard() {
+        if (game == null) return;
         System.out.println();
         ChessBoardPrinter.drawBoard(game, perspective);
-        System.out.print("gameplay> ");
+//        System.out.print("gameplay> ");
     }
 
     private void promptLoop() {
@@ -67,7 +98,10 @@ public class GamePlayUI {
             case "resign" -> resignGame();
             case "move" -> makeMove();
             case "highlight" -> highlightMoves();
-            default -> System.out.println("Unknown command. Type 'help'.");
+            default -> {
+                System.out.println("Unknown command. Type 'help'.");
+                System.out.print("gameplay> ");
+            }
         }
     }
 
@@ -87,13 +121,11 @@ public class GamePlayUI {
     private void leaveGame() {
         System.out.println("Leaving game...");
         running = false;
-        if (wsClient != null) {
-            wsClient.sendCommand(new UserGameCommand(
-                    UserGameCommand.CommandType.LEAVE,
-                    wsClient.getConnectToken(),
-                    wsClient.getGameID()
-            ));
-        }
+        wsClient.sendCommand(new UserGameCommand(
+                UserGameCommand.CommandType.LEAVE,
+                wsClient.getConnectToken(),
+                wsClient.getGameID()
+        ));
     }
 
     private void resignGame() {
@@ -101,49 +133,41 @@ public class GamePlayUI {
         if (scanner.nextLine().trim().equalsIgnoreCase("yes")) {
             System.out.println("You resigned.");
             running = false;
-            if (wsClient != null) {
-                wsClient.sendCommand(new UserGameCommand(
-                        UserGameCommand.CommandType.RESIGN,
-                        wsClient.getConnectToken(),
-                        wsClient.getGameID()
-                ));
-            }
+            wsClient.sendCommand(new UserGameCommand(
+                    UserGameCommand.CommandType.RESIGN,
+                    wsClient.getConnectToken(),
+                    wsClient.getGameID()
+            ));
         } else {
             System.out.println("Resign cancelled.");
+            System.out.print("gameplay> ");
         }
-        System.out.print("gameplay> ");
     }
 
     private void makeMove() {
-        System.out.print("Enter move (e.g., e2e4): ");
-        String moveStr = scanner.nextLine().trim().toLowerCase();
+        lastMoveSucceeded = false;
 
-        try {
-            ChessPosition from = ChessPosition.fromString(moveStr.substring(0, 2));
-            ChessPosition to = ChessPosition.fromString(moveStr.substring(2, 4));
-            ChessPiece piece = game.getBoard().getPiece(from);
+        while (!lastMoveSucceeded) {
+            System.out.print("Enter move (e.g., e2e4): ");
+            String moveStr = scanner.nextLine().trim().toLowerCase();
 
-            String promotion = null;
-            if (piece != null && piece.getPieceType() == ChessPiece.PieceType.PAWN &&
-                    ((to.getRow() == 8 && piece.getTeamColor() == ChessGame.TeamColor.WHITE) ||
-                            (to.getRow() == 1 && piece.getTeamColor() == ChessGame.TeamColor.BLACK))) {
-                System.out.print("Promote pawn to (Q/R/B/N): ");
-                promotion = scanner.nextLine().trim().toUpperCase();
+            try {
+                if (moveStr.length() < 4) throw new Exception("Invalid format. Use e2e4.");
+
+                ChessPosition from = ChessPosition.fromString(moveStr.substring(0, 2));
+                ChessPosition to = ChessPosition.fromString(moveStr.substring(2, 4));
+
+                wsClient.sendMove(new ChessMove(from, to, null));
+//                System.out.println("Move sent. Waiting for server...");
+
+                Thread.sleep(150);
+
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
             }
-
-            wsClient.sendCommand(new UserGameCommand(
-                    UserGameCommand.CommandType.MAKE_MOVE,
-                    wsClient.getConnectToken(),
-                    wsClient.getGameID(),
-                    moveStr
-            ));
-
-            System.out.println("Move sent: " + moveStr + " (waiting for server update...)");
-
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
         }
     }
+
 
     private void highlightMoves() {
         System.out.print("Enter piece position (e.g., e2): ");
@@ -162,10 +186,4 @@ public class GamePlayUI {
         }
         System.out.print("gameplay> ");
     }
-
-    public void updateBoard(ChessGame updatedGame) {
-        this.game = updatedGame;
-        drawBoard();
-    }
-
 }
