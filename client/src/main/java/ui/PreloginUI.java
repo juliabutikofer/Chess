@@ -8,6 +8,7 @@ public class PreloginUI {
 
     private final ServerFacade facade;
     private final Scanner scanner;
+    private final int serverPort = 8080; // Set this to the port your server runs on
 
     public PreloginUI(ServerFacade facade) {
         this.facade = facade;
@@ -16,7 +17,7 @@ public class PreloginUI {
 
     public void start() {
         System.out.println("Welcome to Chess Client!");
-        System.out.println("type 'help' to see commands");
+        System.out.println("Type 'help' to see commands");
 
         while (true) {
             System.out.print("prelogin> ");
@@ -58,7 +59,7 @@ public class PreloginUI {
             facade.login(username, password);
             System.out.println("Login successful!");
 
-            PostloginUI postlogin = new PostloginUI(facade, scanner);
+            PostloginUI postlogin = new PostloginUI(facade, scanner, serverPort);
             postlogin.start();
 
         } catch (Exception e) {
@@ -83,7 +84,7 @@ public class PreloginUI {
             facade.register(username, password, email);
             System.out.println("Registration successful! You are now logged in.");
 
-            PostloginUI postlogin = new PostloginUI(facade, scanner);
+            PostloginUI postlogin = new PostloginUI(facade, scanner, serverPort);
             postlogin.start();
 
         } catch (Exception e) {
