@@ -148,7 +148,9 @@ public class GamePlayUI {
             String moveStr = scanner.nextLine().trim().toLowerCase();
 
             try {
-                if (moveStr.length() < 4) throw new Exception("Invalid format. Use e2e4.");
+                if (moveStr.length() < 4) {
+                    throw new Exception("Invalid format. Use e2e4.");
+                }
 
                 ChessPosition from = ChessPosition.fromString(moveStr.substring(0, 2));
                 ChessPosition to = ChessPosition.fromString(moveStr.substring(2, 4));
