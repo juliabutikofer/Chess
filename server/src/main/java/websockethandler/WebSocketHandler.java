@@ -90,14 +90,21 @@ public class WebSocketHandler {
 
             System.out.println("[HANDLER] Move successful, checking for check...");
 
+            GameData gameData = gameService.getGame(cmd.getGameID());
+            String whiteUser = gameData.whiteUsername();
+            String blackUser = gameData.blackUsername();
+
             ChessGame.TeamColor toMove = updatedGame.getTeamTurn();
 
             if (!updatedGame.isOver() && updatedGame.isInCheck(toMove)) {
+                String userInCheck = (toMove == ChessGame.TeamColor.WHITE ? whiteUser : blackUser);
+                String colorInCheck = (toMove == ChessGame.TeamColor.WHITE ? "White" : "Black");
+
                 broadcastToGame(
                         cmd.getGameID(),
                         new ServerMessage(
                                 ServerMessage.ServerMessageType.NOTIFICATION,
-                                (toMove == ChessGame.TeamColor.WHITE ? "White" : "Black") + " is in check!",
+                                userInCheck + " (" + colorInCheck + ") is in check!",
                                 false
                         )
                 );
@@ -111,22 +118,31 @@ public class WebSocketHandler {
                     new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION,
                             auth.username() + " made a move.", false));
 
+            // Checkmate / game over
             if (updatedGame.isOver()) {
                 System.out.println("[HANDLER] Game over detected, broadcasting NOTIFICATION...");
 
-                String winner;
+                String winnerUser = null;
+                String winnerColor = null;
 
                 if (updatedGame.isInCheckmate(ChessGame.TeamColor.WHITE)) {
-                    winner = "Black wins!";
+                    winnerUser = blackUser;
+                    winnerColor = "Black";
                 } else if (updatedGame.isInCheckmate(ChessGame.TeamColor.BLACK)) {
-                    winner = "White wins!";
-                } else {
-                    winner = "Game over.";
+                    winnerUser = whiteUser;
+                    winnerColor = "White";
                 }
 
-                broadcastToGame(cmd.getGameID(),
-                        new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION,
-                                "Checkmate! " + winner, false));
+                if (winnerUser != null) {
+                    broadcastToGame(
+                            cmd.getGameID(),
+                            new ServerMessage(
+                                    ServerMessage.ServerMessageType.NOTIFICATION,
+                                    "Checkmate! " + winnerUser + " (" + winnerColor + ") wins!",
+                                    false
+                            )
+                    );
+                }
             }
 
         } catch (Exception e) {
