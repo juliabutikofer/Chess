@@ -5,6 +5,8 @@ import websocket.WebSocketClient;
 import websocket.commands.UserGameCommand;
 import chessboardprinter.ChessBoardPrinter;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Scanner;
 
 public class GamePlayUI {
@@ -15,6 +17,9 @@ public class GamePlayUI {
     private final Scanner scanner = new Scanner(System.in);
     private boolean running = true;
     private boolean lastMoveSucceeded = false;
+    private Collection<ChessPosition> highlightedSquares = new ArrayList<>();
+    private ChessPosition selectedSquare = null;
+
 
 
     public GamePlayUI(WebSocketClient wsClient, ChessGame game, String perspective) {
@@ -84,7 +89,10 @@ public class GamePlayUI {
     private void handleCommand(String cmd) {
         switch (cmd) {
             case "help" -> printHelp();
-            case "redraw" -> drawBoard();
+            case "redraw" -> {
+                drawBoard();
+                System.out.print("gameplay> ");
+            }
             case "leave" -> leaveGame();
             case "resign" -> resignGame();
             case "move" -> makeMove();
@@ -128,7 +136,6 @@ public class GamePlayUI {
                     wsClient.getConnectToken(),
                     wsClient.getGameID()
             ));
-            // stay in gameplay UI, but you may want to block further moves locally
         } else {
             System.out.println("Resign cancelled.");
             System.out.print("gameplay> ");
@@ -138,7 +145,7 @@ public class GamePlayUI {
     private void makeMove() {
         lastMoveSucceeded = false;
 
-        while (!lastMoveSucceeded) {
+        while (true) {
             System.out.print("Enter move (e.g., e2e4): ");
             String moveStr = scanner.nextLine().trim().toLowerCase();
 
@@ -154,30 +161,60 @@ public class GamePlayUI {
 
                 Thread.sleep(150);
 
+                if (lastMoveSucceeded) {
+                    break;
+                } else {
+                    break;
+                }
+
             } catch (Exception e) {
+                String msg = e.getMessage().toLowerCase();
+
+                if (msg.contains("not your turn")) {
+                    System.out.println("Error: " + e.getMessage());
+                    return;
+                }
+
                 System.out.println("Error: " + e.getMessage());
             }
         }
+//        System.out.print("gameplay> ");
     }
+
 
 
     private void highlightMoves() {
         System.out.print("Enter piece position (e.g., e2): ");
         String posStr = scanner.nextLine().trim().toLowerCase();
+
         try {
             ChessPosition pos = ChessPosition.fromString(posStr);
             ChessPiece piece = game.getBoard().getPiece(pos);
+
             if (piece == null) {
                 System.out.println("No piece at that position.");
+                highlightedSquares.clear();
+                selectedSquare = null;
             } else {
-                System.out.println(piece.getPieceType() + " at " + pos + " legal moves:");
+                selectedSquare = pos;
+
+                highlightedSquares = new ArrayList<>();
                 for (ChessMove move : game.validMoves(pos)) {
-                    System.out.println(move);
+                    highlightedSquares.add(move.getEndPosition());
                 }
+
+                ChessBoardPrinter.drawBoardWithHighlights(
+                        game, perspective, selectedSquare, highlightedSquares);
             }
+
         } catch (Exception e) {
             System.out.println("Invalid position.");
+            highlightedSquares.clear();
+            selectedSquare = null;
         }
+
         System.out.print("gameplay> ");
     }
+
 }
+

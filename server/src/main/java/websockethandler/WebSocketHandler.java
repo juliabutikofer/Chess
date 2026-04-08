@@ -47,7 +47,6 @@ public class WebSocketHandler {
                 throw new DataAccessException("unauthorized");
             }
 
-            // You already have this method — it returns GameData
             GameData gameData = gameService.getGame(gameId);
             if (gameData == null) {
                 throw new DataAccessException("game not found");
@@ -55,13 +54,10 @@ public class WebSocketHandler {
 
             ChessGame game = gameData.game();
 
-            // Add this WebSocket connection to the game's client set
             gameClients.computeIfAbsent(gameId, k -> ConcurrentHashMap.newKeySet()).add(ctx);
 
-            // Send LOAD_GAME to the connecting client
             ctx.send(gson.toJson(new ServerMessage(ServerMessage.ServerMessageType.LOAD_GAME, game)));
 
-            // Determine role using GameData fields
             String username = auth.username();
             String roleMsg;
 
@@ -73,7 +69,6 @@ public class WebSocketHandler {
                 roleMsg = username + " joined as observer";
             }
 
-            // Notify all OTHER clients
             broadcastToOthers(
                     gameId,
                     ctx.sessionId(),
@@ -93,8 +88,22 @@ public class WebSocketHandler {
 
             ChessGame updatedGame = gameService.makeMove(cmd.getGameID(), cmd.getMove(), cmd.getAuthToken());
 
-            System.out.println("[HANDLER] Move successful, broadcasting board...");
+            System.out.println("[HANDLER] Move successful, checking for check...");
 
+            ChessGame.TeamColor toMove = updatedGame.getTeamTurn();
+
+            if (!updatedGame.isOver() && updatedGame.isInCheck(toMove)) {
+                broadcastToGame(
+                        cmd.getGameID(),
+                        new ServerMessage(
+                                ServerMessage.ServerMessageType.NOTIFICATION,
+                                (toMove == ChessGame.TeamColor.WHITE ? "White" : "Black") + " is in check!",
+                                false
+                        )
+                );
+            }
+
+            System.out.println("[HANDLER] Broadcasting board...");
             broadcastToGame(cmd.getGameID(),
                     new ServerMessage(ServerMessage.ServerMessageType.LOAD_GAME, updatedGame));
 
@@ -104,8 +113,20 @@ public class WebSocketHandler {
 
             if (updatedGame.isOver()) {
                 System.out.println("[HANDLER] Game over detected, broadcasting NOTIFICATION...");
+
+                String winner;
+
+                if (updatedGame.isInCheckmate(ChessGame.TeamColor.WHITE)) {
+                    winner = "Black wins!";
+                } else if (updatedGame.isInCheckmate(ChessGame.TeamColor.BLACK)) {
+                    winner = "White wins!";
+                } else {
+                    winner = "Game over.";
+                }
+
                 broadcastToGame(cmd.getGameID(),
-                        new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION, "Checkmate! Game over.", false));
+                        new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION,
+                                "Checkmate! " + winner, false));
             }
 
         } catch (Exception e) {
@@ -116,15 +137,33 @@ public class WebSocketHandler {
     }
 
 
-
     private void handleResign(UserGameCommand cmd, WsContext ctx) {
         try {
             gameService.resignGame(cmd.getGameID(), cmd.getAuthToken());
-            broadcastToGame(cmd.getGameID(), new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION, "Game Over: Resignation", false));
+
+            GameData gameData = gameService.getGame(cmd.getGameID());
+            ChessGame game = gameData.game();
+
+            String loser = game.getResignedBy();
+            String winner;
+
+            if (loser.equals(gameData.whiteUsername())) {
+                winner = gameData.blackUsername();
+            } else {
+                winner = gameData.whiteUsername();
+            }
+
+            broadcastToGame(cmd.getGameID(),
+                    new ServerMessage(
+                            ServerMessage.ServerMessageType.NOTIFICATION,
+                            loser + " resigned. " + winner + " wins!",
+                            false));
+
         } catch (Exception e) {
             sendError(ctx, e.getMessage());
         }
     }
+
 
     private void handleLeave(UserGameCommand cmd, WsContext ctx) {
         try {
