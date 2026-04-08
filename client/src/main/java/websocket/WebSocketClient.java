@@ -129,6 +129,7 @@ public class WebSocketClient {
             }
 
             switch (msg.getServerMessageType()) {
+
                 case LOAD_GAME -> {
                     if (msg.game == null) {
                         System.err.println("[WS CLIENT] ERROR: LOAD_GAME but game == null");
@@ -145,16 +146,27 @@ public class WebSocketClient {
 
                     WebSocketClient.this.currentGame = msg.game;
                     mainListener.onBoardUpdate(msg.game);
+
+                    System.out.print("gameplay> ");
                 }
 
-                case NOTIFICATION -> mainListener.onNotification(msg.message);
+                case NOTIFICATION -> {
+                    mainListener.onNotification(msg.message);
 
-                case ERROR -> mainListener.onError(msg.errorMessage);
+                    System.out.print("gameplay> ");
+                }
+
+                case ERROR -> {
+                    mainListener.onError(msg.errorMessage);
+
+                    System.out.print("gameplay> ");
+                }
             }
 
             webSocket.request(1);
             return null;
         }
+
 
         @Override
         public void onError(WebSocket webSocket, Throwable error) {

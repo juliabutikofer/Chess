@@ -40,13 +40,15 @@ public class GamePlayUI {
                         : "Black";
 
                 System.out.println("\n" + turn + " to move");
-                System.out.print("gameplay> ");
+//                System.out.print("gameplay> ");
             }
 
 
             @Override
             public void onNotification(String message) {
                 System.out.println("\n[WS] " + message);
+//                System.out.print("gameplay> ");
+
             }
 
 
@@ -54,6 +56,7 @@ public class GamePlayUI {
             public void onError(String errorMessage) {
                 lastMoveSucceeded = false;
                 System.out.println("\n" + errorMessage);
+//                System.out.print("gameplay> ");
             }
 
 
@@ -82,9 +85,16 @@ public class GamePlayUI {
     private void promptLoop() {
         while (running) {
             String input = scanner.nextLine().trim().toLowerCase();
+
+            if (input.isEmpty()) {
+                System.out.print("gameplay> ");
+                continue;
+            }
+
             handleCommand(input);
         }
     }
+
 
     private void handleCommand(String cmd) {
         switch (cmd) {
@@ -138,7 +148,7 @@ public class GamePlayUI {
             ));
         } else {
             System.out.println("Resign cancelled.");
-            System.out.print("gameplay> ");
+//            System.out.print("gameplay> ");
         }
     }
 
@@ -149,15 +159,58 @@ public class GamePlayUI {
             System.out.print("Enter move (e.g., e2e4): ");
             String moveStr = scanner.nextLine().trim().toLowerCase();
 
-            try {
-                if (moveStr.length() < 4) {
-                    throw new Exception("Invalid format. Use e2e4.");
-                }
+            if (moveStr.length() != 4 ||
+                    !Character.isLetter(moveStr.charAt(0)) ||
+                    !Character.isDigit(moveStr.charAt(1)) ||
+                    !Character.isLetter(moveStr.charAt(2)) ||
+                    !Character.isDigit(moveStr.charAt(3))) {
 
+                System.out.println("Error: Invalid move.");
+                continue;
+            }
+
+            char file1 = moveStr.charAt(0);
+            char rank1 = moveStr.charAt(1);
+            char file2 = moveStr.charAt(2);
+            char rank2 = moveStr.charAt(3);
+
+            if (file1 < 'a' || file1 > 'h' ||
+                    rank1 < '1' || rank1 > '8' ||
+                    file2 < 'a' || file2 > 'h' ||
+                    rank2 < '1' || rank2 > '8') {
+
+                System.out.println("Error: Move out of bounds.");
+                continue;
+            }
+
+            try {
                 ChessPosition from = ChessPosition.fromString(moveStr.substring(0, 2));
                 ChessPosition to = ChessPosition.fromString(moveStr.substring(2, 4));
 
-                wsClient.sendMove(new ChessMove(from, to, null));
+                ChessPiece.PieceType promo = null;
+                ChessPiece movingPiece = game.getBoard().getPiece(from);
+
+                if (movingPiece != null && movingPiece.getPieceType() == ChessPiece.PieceType.PAWN) {
+                    int endRow = to.getRow();
+
+                    if (endRow == 1 || endRow == 8) {
+                        System.out.print("Promote to (q, r, b, n): ");
+                        String choice = scanner.nextLine().trim().toLowerCase();
+
+                        switch (choice) {
+                            case "q" -> promo = ChessPiece.PieceType.QUEEN;
+                            case "r" -> promo = ChessPiece.PieceType.ROOK;
+                            case "b" -> promo = ChessPiece.PieceType.BISHOP;
+                            case "n" -> promo = ChessPiece.PieceType.KNIGHT;
+                            default -> {
+                                System.out.println("Invalid choice. Defaulting to queen.");
+                                promo = ChessPiece.PieceType.QUEEN;
+                            }
+                        }
+                    }
+                }
+
+                wsClient.sendMove(new ChessMove(from, to, promo));
 
                 Thread.sleep(150);
 
@@ -178,9 +231,7 @@ public class GamePlayUI {
                 System.out.println("Error: " + e.getMessage());
             }
         }
-//        System.out.print("gameplay> ");
     }
-
 
 
     private void highlightMoves() {
